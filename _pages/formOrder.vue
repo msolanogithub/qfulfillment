@@ -1,62 +1,125 @@
 <template>
   <div id="formOrder">
-    <dynamic-field v-model="form.accountId" :field="dynamicFields.accountId" />
-    <dynamic-field v-model="form.locationId" :field="dynamicFields.locationId" />
-    <dynamic-field v-model="form.externalId" :field="dynamicFields.externalId" />
+    <div class="row q-col-gutter-md">
+      <div class="col-12">
+        <div class="box">
+          <div class="q-mb-md text-info">
+            <q-icon name="fas fa-boot" class="q-mr-sm" />
+            Pedido
+          </div>
+          <q-table
+            flat bordered separator="cell"
+            :rows="form.rows"
+            :columns="columns"
+            row-key="id"
+            hide-pagination
+          >
+            <!-- Columns -->
+            <template v-slot:body-cell="props">
+              <q-td :props="props">
+                <div v-if="props.col.name == 'reference'">
+                  {{ props.row[props.col.name].title }}
+                  <div class="text-caption text-grey">
+                    {{ props.row.labelOptions }}
+                  </div>
+                </div>
+                <!-- total calculado -->
+                <div v-else-if="props.col.name === 'total'" class="text-right">
+                  {{ rowTotal(props.row) }}
+                </div>
+                <div v-else :class="props.row[ props.col.name ] ? 'bg-info' : ''">
+                  <q-input
+                    v-model.number="props.row[ props.col.name ]"
+                    input-class="text-right"
+                    type="number"
+                    dense
+                    borderless
+                  />
+                </div>
+              </q-td>
+            </template>
+          </q-table>
+          <!-- Save Action -->
+          <q-btn
+            color="blue"
+            outline rounded
+            no-caps class="full-width q-mt-md"
+            icon="fa-light fa-plus"
+            label="Agregar Referencia"
+            @click="formAddReference.show = true"
+          />
+        </div>
+      </div>
 
-    <div class="q-py-md">
-      <q-table
-        flat bordered
-        title="Referencias"
-        :rows="form.rows"
-        :columns="columns"
-        row-key="id"
-        hide-pagination
-      >
-        <!-- Columns -->
-        <template v-slot:body-cell="props">
-          <q-td :props="props">
-            <div v-if="props.col.name == 'reference'">
-              {{ props.row[props.col.name].title }}
-              <div class="text-caption text-grey">
-                {{ props.row.labelOptions }}
-              </div>
-            </div>
-            <!-- total calculado -->
-            <div v-else-if="props.col.name === 'total'" class="text-right">
-              {{ rowTotal(props.row) }}
-            </div>
-            <div v-else :class="props.row[ props.col.name ] ? 'bg-info' : ''">
-              <q-input
-                v-model.number="props.row[ props.col.name ]"
-                input-class="text-right"
-                type="number"
-                dense
-                borderless
-              />
-            </div>
-          </q-td>
-        </template>
-      </q-table>
-    </div>
+      <div class="col-6">
+        <div class="box">
+          <div class="q-mb-md text-info">
+            <q-icon name="fas fa-user" class="q-mr-sm" />
+            Cliente
+          </div>
+          <dynamic-field v-model="form.account" :field="dynamicFields.account" />
+          <dynamic-field v-model="form.location" :field="dynamicFields.locationId" />
+          <dynamic-field v-model="form.externalId" :field="dynamicFields.externalId" class="q-mb-md" />
+          <dynamic-field :field="dynamicFields.mediaSingle" />
+        </div>
+      </div>
+      <div class="col-6">
+        <div class="box">
+          <div class="q-mb-md text-info">
+            <q-icon name="fas fa-user" class="q-mr-sm" />
+            Resumen
+          </div>
+          <q-list separator>
+            <q-item>
+              <q-item-section>
+                <q-item-label>Pares Totales</q-item-label>
+              </q-item-section>
 
-    <!-- Save Action -->
-    <div class="row justify-between">
-      <q-btn
-        color="blue"
-        unelevated rounded
-        no-caps
-        icon="fa-light fa-plus"
-        label="Agregar Referencia"
-        @click="formAddReference.show = true"
-      />
+              <q-item-section side>
+                <q-item-label>
+                  {{ form.rows.reduce((total, i) => total + this.rowTotal(i), 0) }}
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item>
+              <q-item-section>
+                <q-item-label>Referencias</q-item-label>
+                <q-item-label caption lines="2">
+                  {{ form.rows.map(i => i.reference.title).join(', ') }}
+                </q-item-label>
+              </q-item-section>
 
-      <q-btn
-        unelevated rounded no-caps
-        label="Crear" color="positive"
-        icon="fa-light fa-save"
-        @click="createOrder"
-      />
+              <q-item-section side>
+                <q-item-label>{{form.rows.length}}</q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item v-if="form.account">
+              <q-item-section>
+                <q-item-label>{{ form.account.title }} ({{ form.account.type.title }})</q-item-label>
+                <q-item-label caption lines="2">
+                  {{ form.account.documentType.title }}: {{ form.account.document }}
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+            <q-item v-if="form.location">
+              <q-item-section>
+                <q-item-label>{{ form.location.address }}</q-item-label>
+                <q-item-label caption lines="2">
+                  {{ form.location.province.name }}, {{ form.location.city.name }}
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+          </q-list>
+
+          <q-btn
+            outline rounded no-caps
+            label="Crear" color="positive"
+            icon="fa-light fa-save"
+            class="full-width q-mt-md"
+            @click="createOrder"
+          />
+        </div>
+      </div>
     </div>
 
     <q-dialog v-model="formAddReference.show" persistent>
@@ -114,8 +177,8 @@ export default {
     return {
       loading: false,
       form: {
-        accountId: null,
-        locationId: null,
+        account: null,
+        location: null,
         externalId: null,
         rows: []
       },
@@ -131,11 +194,11 @@ export default {
   computed: {
     dynamicFields() {
       return {
-        accountId: {
+        account: {
           type: 'select',
           props: {
-            label: 'Account',
-            options: []
+            label: 'Cliente',
+            emitValue: false
           },
           loadOptions: {
             apiRoute: 'apiRoutes.qaccount.accounts',
@@ -145,14 +208,14 @@ export default {
         locationId: {
           type: 'select',
           props: {
-            label: 'Location',
-            options: [],
-            disable: !this.form.accountId
+            label: 'Dirección',
+            emitValue: false,
+            disable: !this.form.account
           },
           loadOptions: {
             apiRoute: 'apiRoutes.qlocations.locatables',
             requestParams: {
-              include: 'translations',
+              include: 'translations,province.translations,city.translations',
               filter: {
                 entityType: 'Modules\\Iaccount\\Models\\Account',
                 entityId: this.form.accountId
@@ -165,6 +228,17 @@ export default {
           type: 'input',
           props: {
             label: 'ID Externo'
+          }
+        },
+        mediaSingle: {
+          type: 'media',
+          props: {
+            label: 'Documento Soporte',
+            zone: 'mainimage',
+            entity: 'Modules\\Ifulfillment\\Models\\Order',
+            entityId: null,
+            accept: 'images',
+            directUpload: true
           }
         },
         shoe: {
@@ -270,7 +344,8 @@ export default {
         }))
       };
 
-      this.$crud.create('apiRoutes.qfulfillment.orders', order).then(res => {})
+      this.$crud.create('apiRoutes.qfulfillment.orders', order).then(res => {
+      });
     }
   }
 };
