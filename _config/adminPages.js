@@ -22,10 +22,26 @@ export default {
     name: 'qfulfillment.admin.orders.create',
     page: () => import('modules/qfulfillment/_pages/formOrder'),
     layout: () => import('layouts/master.vue'),
-    title: 'ifulfillment.cms.sidebar.adminOrders',
+    title: 'ifulfillment.cms.sidebar.adminNewOrder',
     icon: 'fa-light fa-file-invoice',
     subHeader: {
-      refresh: true
+      refresh: true,
+      breadcrumb: ['qfulfillment.orders']
+    }
+  },
+  updateOrder: {
+    permission: 'ifulfillment.orders.edit',
+    activated: true,
+    authenticated: true,
+    path: '/fulfillment/orders/update/:id',
+    name: 'qfulfillment.admin.orders.update',
+    page: () => import('modules/qfulfillment/_pages/formOrder'),
+    layout: () => import('layouts/master.vue'),
+    title: 'ifulfillment.cms.sidebar.adminUpdateOrder',
+    icon: 'fa-light fa-file-invoice',
+    subHeader: {
+      refresh: true,
+      breadcrumb: ['qfulfillment.orders']
     }
   }
 };

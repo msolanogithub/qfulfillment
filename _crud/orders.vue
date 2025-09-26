@@ -28,7 +28,7 @@ export default {
             },
             {
               name: 'account',
-              label: this.$tr('isite.cms.form.customer'),
+              label: this.$tr('ifulfillment.cms.account'),
               field: 'account',
               align: 'left',
               format: (val) => (val ? val.title : '-')
@@ -41,16 +41,21 @@ export default {
             },
             {
               name: 'quantity',
-              label: this.$tr('ifulfillment.cms.quantity'),
+              label: this.$tr('isite.cms.form.quantity'),
               field: 'quantity',
               align: 'left'
             },
             {
-              name: 'price',
-              label: this.$tr('ifulfillment.cms.price'),
-              field: 'price',
-              align: 'left',
-              format: (val) => this.$trn(val)
+              name: 'dueDate',
+              label: this.$tr('ifulfillment.cms.dueDate'),
+              field: 'dueDate',
+              align: 'left'
+            },
+            {
+              name: 'comment',
+              label: this.$tr('isite.cms.form.comment'),
+              field: 'comment',
+              align: 'left'
             },
             {
               name: 'created_at',
@@ -70,7 +75,8 @@ export default {
           }
         },
         update: {
-          title: this.$tr('ifulfillment.cms.updateOrder')
+          title: this.$tr('ifulfillment.cms.updateOrder'),
+          to: 'qfulfillment.admin.orders.update'
         },
         delete: false,
         formLeft: {}

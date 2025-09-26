@@ -3,10 +3,15 @@ export default {
     cms: {
       sidebar: {
         adminFulfillment: 'Producción',
-        adminOrders: 'Ordenes'
+        adminOrders: 'Ordenes de compra',
+        adminNewOrder: 'Nueva Orden de Compra',
+        adminUpdateOrder: 'Actualizar Orden de Compra'
       },
-      newOrder: 'Nueva Orden',
-      updateOrder: 'Actualizar Orden'
+      newOrder: 'Nueva Orden de Compra',
+      updateOrder: 'Actualizar Orden de Compra',
+      account: 'Cliente',
+      externalId: '# Orden de compra',
+      dueDate: 'Fecha de envio'
     }
   }
 };

@@ -1,11 +1,55 @@
 <template>
-  <div id="formOrder">
+  <div id="formOrder" class="relative-position">
+    <page-actions
+      :title="$tr($route.meta.title) + (orderId ? ' #' + orderId : '')"
+      class="q-mb-md"
+      @refresh="init"
+    />
+
     <div class="row q-col-gutter-md">
+      <div class="col-8">
+        <div class="box">
+          <div class="box-title q-mb-md">
+            <q-icon name="fa-light fa-user" class="q-mr-sm" />
+            Información
+          </div>
+          <dynamic-field v-model="form.accountId" :field="dynamicFields.accountId" />
+          <dynamic-field v-model="form.locatableId" :field="dynamicFields.locatableId" />
+          <dynamic-field v-model="form.dueDate" :field="dynamicFields.dueDate" />
+          <dynamic-field v-model="form.externalId" :field="dynamicFields.externalId" class="q-mb-md" />
+          <dynamic-field v-model="form.comment" :field="dynamicFields.comment" class="q-mb-md" />
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="box">
+          <dynamic-field
+            v-model="form.mediasSingle"
+            :field="dynamicFields.mediasSingle"
+            :item-id="orderId"
+          />
+        </div>
+      </div>
       <div class="col-12">
         <div class="box">
-          <div class="q-mb-md text-info">
-            <q-icon name="fas fa-boot" class="q-mr-sm" />
-            Pedido
+          <div class="box-title q-mb-md row justify-between items-center">
+            <div>
+              <q-icon name="fa-light fa-boot" class="q-mr-sm" />
+              Referencias
+            </div>
+            <div>
+              <q-chip size="12px" class="text-blue-grey bg-grey-2">
+                <q-avatar color="info" text-color="white">
+                  {{ totals.totalPairs }}
+                </q-avatar>
+                Pares Totales
+              </q-chip>
+              <q-chip size="12px" class="text-blue-grey bg-grey-2">
+                <q-avatar color="info" text-color="white">
+                  {{ totals.totalReferences }}
+                </q-avatar>
+                Referencias
+              </q-chip>
+            </div>
           </div>
           <q-table
             flat bordered separator="cell"
@@ -17,24 +61,55 @@
             <!-- Columns -->
             <template v-slot:body-cell="props">
               <q-td :props="props">
+                <!-- Referencia -->
                 <div v-if="props.col.name == 'reference'">
-                  {{ props.row[props.col.name].title }}
-                  <div class="text-caption text-grey">
-                    {{ props.row.labelOptions }}
+                  <div class="row items-center no-wrap">
+                    <div class="q-mr-sm">
+                      <help-text
+                        :title="props.row[props.col.name].title"
+                        :description="props.row.labelOptions"
+                      />
+                    </div>
+                    <div>
+                      {{ props.row[props.col.name].title }} <br>
+                      <span class="text-caption text-grey">
+                      {{ props.row.options.length }} Opciones
+                    </span>
+                    </div>
                   </div>
                 </div>
                 <!-- total calculado -->
                 <div v-else-if="props.col.name === 'total'" class="text-right">
                   {{ rowTotal(props.row) }}
                 </div>
-                <div v-else :class="props.row[ props.col.name ] ? 'bg-info' : ''">
-                  <q-input
-                    v-model.number="props.row[ props.col.name ]"
-                    input-class="text-right"
-                    type="number"
-                    dense
-                    borderless
-                  />
+                <!-- quantities -->
+                <div v-else>
+                  <div :class="props.row[props.col.name] ? 'text-blue text-bold' : 'text-blue-grey'">
+                    {{ props.row[props.col.name] }}
+                  </div>
+                  <q-popup-edit
+                    v-model="props.row[ props.col.name ]"
+                    color="blue-grey"
+                    v-slot="scope"
+                  >
+                    <div class="text-blue-grey q-mb-sm">
+                      {{ props.row.reference.title }}
+                    </div>
+                    <q-input
+                      v-model="scope.value"
+                      color="blue-grey"
+                      :label="'Talla: '+props.col.name"
+                      outlined autofocus
+                      @keyup.enter="() => {
+                        scope.value = normalizeQty(scope.value)
+                        scope.set()
+                      }"
+                      type="number"
+                      inputmode="numeric"
+                      min="0" step="1"
+                      hint="Presiona Enter para guardar"
+                    />
+                  </q-popup-edit>
                 </div>
               </q-td>
             </template>
@@ -50,73 +125,26 @@
           />
         </div>
       </div>
-
-      <div class="col-6">
+      <div class="col-12">
         <div class="box">
           <div class="q-mb-md text-info">
-            <q-icon name="fas fa-user" class="q-mr-sm" />
-            Cliente
+            <q-icon name="fa-light fa-circle-info" size="sm" class="q-mr-md" />
+            Debes completar todos los campos con un * para crear una orden.
           </div>
-          <dynamic-field v-model="form.account" :field="dynamicFields.account" />
-          <dynamic-field v-model="form.location" :field="dynamicFields.locationId" />
-          <dynamic-field v-model="form.externalId" :field="dynamicFields.externalId" class="q-mb-md" />
-          <dynamic-field :field="dynamicFields.mediaSingle" />
-        </div>
-      </div>
-      <div class="col-6">
-        <div class="box">
-          <div class="q-mb-md text-info">
-            <q-icon name="fas fa-user" class="q-mr-sm" />
-            Resumen
+          <div v-for="(item, itemKey) in validation.items" :key="itemKey" class="q-pl-lg">
+            <q-icon
+              :name="item.isValid ? 'fas fa-circle-check' : 'fa-light fa-circle'"
+              :color="item.isValid ? 'green' : 'red'"
+              class="q-mr-md"
+            />
+            <span class="text-blue-grey">{{ item.label }}</span>
           </div>
-          <q-list separator>
-            <q-item>
-              <q-item-section>
-                <q-item-label>Pares Totales</q-item-label>
-              </q-item-section>
-
-              <q-item-section side>
-                <q-item-label>
-                  {{ form.rows.reduce((total, i) => total + this.rowTotal(i), 0) }}
-                </q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item>
-              <q-item-section>
-                <q-item-label>Referencias</q-item-label>
-                <q-item-label caption lines="2">
-                  {{ form.rows.map(i => i.reference.title).join(', ') }}
-                </q-item-label>
-              </q-item-section>
-
-              <q-item-section side>
-                <q-item-label>{{form.rows.length}}</q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item v-if="form.account">
-              <q-item-section>
-                <q-item-label>{{ form.account.title }} ({{ form.account.type.title }})</q-item-label>
-                <q-item-label caption lines="2">
-                  {{ form.account.documentType.title }}: {{ form.account.document }}
-                </q-item-label>
-              </q-item-section>
-            </q-item>
-            <q-item v-if="form.location">
-              <q-item-section>
-                <q-item-label>{{ form.location.address }}</q-item-label>
-                <q-item-label caption lines="2">
-                  {{ form.location.province.name }}, {{ form.location.city.name }}
-                </q-item-label>
-              </q-item-section>
-            </q-item>
-          </q-list>
-
           <q-btn
-            outline rounded no-caps
-            label="Crear" color="positive"
-            icon="fa-light fa-save"
-            class="full-width q-mt-md"
-            @click="createOrder"
+            color="positive" class="full-width q-mt-lg"
+            unelevated rounded no-caps
+            :label="orderId ? 'Actualizar Orden' : 'Crear Orden'"
+            @click="orderId ? updateOrder() : createOrder()"
+            :disable="!validation.allValid"
           />
         </div>
       </div>
@@ -161,6 +189,8 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <inner-loading :visible="loading" />
   </div>
 </template>
 <script>
@@ -175,11 +205,15 @@ export default {
   },
   data() {
     return {
+      orderId: this.$route.params.id || null,
       loading: false,
       form: {
-        account: null,
-        location: null,
+        accountId: null,
+        locatableId: null,
+        dueDate: null,
         externalId: null,
+        comment: null,
+        mediasSingle: null,
         rows: []
       },
       sizes: { min: 34, max: 46 },
@@ -194,23 +228,25 @@ export default {
   computed: {
     dynamicFields() {
       return {
-        account: {
+        accountId: {
           type: 'select',
           props: {
-            label: 'Cliente',
-            emitValue: false
+            label: 'Cliente *'
           },
           loadOptions: {
             apiRoute: 'apiRoutes.qaccount.accounts',
-            select: { label: 'title', id: 'id' }
+            select: {
+              label: 'title',
+              id: 'id',
+              sublabel: i => `${i.documentType.title}: ${i.document}`
+            }
           }
         },
-        locationId: {
+        locatableId: {
           type: 'select',
           props: {
-            label: 'Dirección',
-            emitValue: false,
-            disable: !this.form.account
+            label: 'Dirección de envio *',
+            disable: !this.form.accountId
           },
           loadOptions: {
             apiRoute: 'apiRoutes.qlocations.locatables',
@@ -221,23 +257,43 @@ export default {
                 entityId: this.form.accountId
               }
             },
-            select: { label: 'title', id: 'id' }
+            select: {
+              label: 'title',
+              id: 'id',
+              sublabel: i => `(${i.city.name}) ${i.address}`
+            }
+          }
+        },
+        dueDate: {
+          type: 'date',
+          props: {
+            label: 'Fecha de envio *',
+            hint: ''
           }
         },
         externalId: {
           type: 'input',
           props: {
-            label: 'ID Externo'
+            label: 'ID Orden de Compra'
           }
         },
-        mediaSingle: {
+        comment: {
+          value: '',
+          type: 'input',
+          props: {
+            label: 'Observaciones',
+            type: 'textarea',
+            rows: '3'
+          }
+        },
+        mediasSingle: {
           type: 'media',
           props: {
-            label: 'Documento Soporte',
-            zone: 'mainimage',
+            label: 'Documento Soporte *',
+            zone: 'mainfile',
             entity: 'Modules\\Ifulfillment\\Models\\Order',
             entityId: null,
-            accept: 'images',
+            accept: 'images,.pdf',
             directUpload: true
           }
         },
@@ -289,35 +345,109 @@ export default {
       ];
 
       for (let i = this.sizes.min; i <= this.sizes.max; i++) {
-        columns.push({ name: i, label: i, field: i, align: 'right' });
+        columns.push({ name: i, label: i, field: i, align: 'center' });
       }
 
       columns.push({ name: 'total', label: 'Total', field: 'total', align: 'right' });
       return columns;
+    },
+    totals() {
+      return {
+        totalPairs: this.form.rows.reduce((total, i) => total + this.rowTotal(i), 0),
+        totalReferences: this.form.rows.length
+      };
+    },
+    validation() {
+      const items = {
+        accountId: {
+          label: 'Selecciona un cliente',
+          isValid: !!this.form.accountId
+        },
+        locatableId: {
+          label: 'Selecciona una dirección de envio',
+          isValid: !!this.form.locatableId
+        },
+        dueDate: {
+          label: 'Define una fecha de envio',
+          isValid: !!this.form.dueDate
+        },
+        mediasSingle: {
+          label: 'Carga el documento soporte',
+          isValid: !!this.form.mediasSingle?.mainfile
+        },
+        quantity: {
+          label: 'Ingresa al menos una referencia con pares',
+          isValid: this.totals.totalPairs
+        }
+      };
+
+      // añadir un campo global
+      const allValid = Object.values(items).every(
+        field => typeof field === 'object' ? field.isValid : true
+      );
+
+      return { items, allValid };
     }
   },
   methods: {
     init() {
+      this.getOrder();
     },
-    setReference() {
-      const selectedOptions = this.loadedShoeOptions.filter(i => this.formAddReference.options.includes(i.id.toString()));
+    getOrder() {
+      if (this.orderId) {
+        this.loading = true;
+        let requestParams = {
+          params: {
+            include: 'items.shoe.translations'
+          }
+        };
+        this.$crud.show('apiRoutes.qfulfillment.orders', this.orderId, requestParams).then(res => {
+          const order = res.data;
+          this.form.accountId = order.accountId;
+          this.form.locatableId = order.locatableId;
+          this.form.dueDate = order.dueDate;
+          this.form.externalId = order.externalId;
+          this.form.comment = order.comment;
+          this.form.mediasSingle = order.mediasSingle;
+          res.data.items.forEach(item => this.setReference(item));
+        }).finally(() => this.loading = false);
+      }
+    },
+    setReference(item = null) {
+      const shoe = item?.shoe ?? this.formAddReference.shoe;
+      const selectedOptions = item?.options ??
+        this.loadedShoeOptions.filter(i => this.formAddReference.options.includes(i.id.toString()));
       let newRow = {
-        reference: this.formAddReference.shoe,
+        reference: shoe,
         options: selectedOptions,
         labelOptions: selectedOptions.map(i => {
-          if (i.parent) return `[${i.parent.title}] ${i.title}`;
-          return i.title;
-        }).join(', '),
-        price: this.formAddReference.shoe.totalPrice
+          let label = i.title;
+          if (i.parent) label = `[${i.parent.title}] ${i.title}`;
+          return `<div class="text-caption">- ${label}</div>`;
+        }).join(''),
+        price: shoe.totalPrice
       };
 
       for (let i = this.sizes.min; i <= this.sizes.max; i++) {
-        newRow[i] = 0;
+        const itemSize = item?.sizes?.find(s => s.size == i);
+        newRow[i] = itemSize ? itemSize.quantity : 0;
       }
 
       this.form.rows.push(newRow);
       this.formAddReference.shoe = null;
       this.formAddReference.options = [];
+    },
+    toNumber(val) {
+      const n = Number(val);
+      return Number.isFinite(n) ? n : 0;
+    },
+    isValidQty(val) {
+      const n = this.toNumber(val);
+      return n >= 0;
+    },
+    normalizeQty(val) {
+      const n = this.toNumber(val);
+      return Math.max(0, Math.floor(n));
     },
     rowTotal(row) {
       let total = 0;
@@ -327,10 +457,15 @@ export default {
       }
       return total;
     },
-    createOrder() {
-      let order = {
+    getFormOrderData(){
+      return {
         accountId: this.form.accountId,
+        locatableId: this.form.locatableId,
+        dueDate: this.form.dueDate,
         externalId: this.form.externalId,
+        comment: this.form.comment,
+        mediasSingle: this.form.mediasSingle,
+
         quantity: this.form.rows.reduce((total, i) => total + this.rowTotal(i), 0),
         price: this.form.rows.reduce((total, i) => total + i.price, 0),
         items: this.form.rows.map(i => ({
@@ -343,8 +478,28 @@ export default {
           }))
         }))
       };
-
+    },
+    createOrder() {
+      this.loading = true;
+      let order = this.getFormOrderData()
       this.$crud.create('apiRoutes.qfulfillment.orders', order).then(res => {
+        this.$alert.info({ message: `${this.$tr('isite.cms.message.recordCreated')}` });
+        this.$router.push({ name: 'qfulfillment.admin.orders.index' });
+      }).catch(err => {
+        this.$alert.error({ message: `${this.$tr('isite.cms.message.recordNoCreated')}` });
+      }).finally(() => {
+        this.loading = false;
+      });
+    },
+    updateOrder() {
+      this.loading = true;
+      let order = this.getFormOrderData()
+      this.$crud.update('apiRoutes.qfulfillment.orders', this.orderId, order).then(res => {
+        this.$alert.info({ message: `${this.$tr('isite.cms.message.recordUpdated')}` });
+      }).catch(err => {
+        this.$alert.error({ message: `${this.$tr('isite.cms.message.recordNoUpdated')}` });
+      }).finally(() => {
+        this.loading = false;
       });
     }
   }
