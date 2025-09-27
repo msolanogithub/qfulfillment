@@ -5,7 +5,8 @@ export default {
         adminFulfillment: 'Producción',
         adminOrders: 'Ordenes de compra',
         adminNewOrder: 'Nueva Orden de Compra',
-        adminUpdateOrder: 'Actualizar Orden de Compra'
+        adminUpdateOrder: 'Actualizar Orden de Compra',
+        adminAccumulated: 'Acumulado',
       },
       newOrder: 'Nueva Orden de Compra',
       updateOrder: 'Actualizar Orden de Compra',

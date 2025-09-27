@@ -57,6 +57,7 @@
             :columns="columns"
             row-key="id"
             hide-pagination
+            :pagination="pagination"
           >
             <!-- Columns -->
             <template v-slot:body-cell="props">
@@ -222,7 +223,11 @@ export default {
         shoe: null,
         options: []
       },
-      loadedShoeOptions: []
+      loadedShoeOptions: [],
+      pagination: {
+        page: 1,
+        rowsPerPage: 0,
+      },
     };
   },
   computed: {
@@ -423,7 +428,7 @@ export default {
         labelOptions: selectedOptions.map(i => {
           let label = i.title;
           if (i.parent) label = `[${i.parent.title}] ${i.title}`;
-          return `<div class="text-caption">- ${label}</div>`;
+          return `<div class="text-caption text-blue-grey">- ${label}</div>`;
         }).join(''),
         price: shoe.totalPrice
       };

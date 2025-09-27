@@ -5,5 +5,6 @@ const urlBase = `/${moduleName}/${moduleVersion}`;
 export default {
   urlBase: urlBase,
   version: moduleVersion,
-  orders: `${urlBase}/orders`
+  orders: `${urlBase}/orders`,
+  orderItems: `${urlBase}/order-items`,
 };

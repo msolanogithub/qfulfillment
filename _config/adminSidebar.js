@@ -6,7 +6,8 @@ export default [
     title: 'ifulfillment.cms.sidebar.adminFulfillment',
     icon: 'fa-light fa-arrow-progress',
     children: [
-      pages.qfulfillment.orders
+      pages.qfulfillment.orders,
+      pages.qfulfillment.accumulated
     ]
   }
 ];

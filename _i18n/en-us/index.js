@@ -3,7 +3,8 @@ export default {
     cms: {
       sidebar: {
         adminFulfillment: 'Fulfillment',
-        adminOrders: 'Orders'
+        adminOrders: 'Orders',
+        adminAccumulated: 'Accumulated',
       },
       newOrder: 'New Order',
       updateOrder: 'Update Order'

@@ -43,5 +43,20 @@ export default {
       refresh: true,
       breadcrumb: ['qfulfillment.orders']
     }
+  },
+  accumulated: {
+    permission: 'ifulfillment.orders.index',
+    activated: true,
+    authenticated: true,
+    path: '/fulfillment/accumulated/index',
+    name: 'qfulfillment.admin.accumulated.index',
+    page: () => import('modules/qfulfillment/_pages/accumulated'),
+    layout: () => import('layouts/master.vue'),
+    title: 'ifulfillment.cms.sidebar.adminAccumulated',
+    icon: 'fa-light fa-page-caret-down',
+    subHeader: {
+      refresh: true,
+      breadcrumb: ['qfulfillment.orders']
+    }
   }
 };
