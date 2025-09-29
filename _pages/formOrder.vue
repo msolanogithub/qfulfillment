@@ -84,7 +84,7 @@
                   {{ rowTotal(props.row) }}
                 </div>
                 <!-- quantities -->
-                <div v-else>
+                <div v-else class="cursor-pointer">
                   <div :class="props.row[props.col.name] ? 'text-blue text-bold' : 'text-blue-grey'">
                     {{ props.row[props.col.name] }}
                   </div>
@@ -217,7 +217,7 @@ export default {
         mediasSingle: null,
         rows: []
       },
-      sizes: { min: 34, max: 46 },
+      sizes: { min: 33, max: 46 },
       formAddReference: {
         show: false,
         shoe: null,
@@ -226,8 +226,8 @@ export default {
       loadedShoeOptions: [],
       pagination: {
         page: 1,
-        rowsPerPage: 0,
-      },
+        rowsPerPage: 0
+      }
     };
   },
   computed: {
@@ -401,6 +401,7 @@ export default {
     getOrder() {
       if (this.orderId) {
         this.loading = true;
+        this.form.rows = [];
         let requestParams = {
           params: {
             include: 'items.shoe.translations'
@@ -462,7 +463,7 @@ export default {
       }
       return total;
     },
-    getFormOrderData(){
+    getFormOrderData() {
       return {
         accountId: this.form.accountId,
         locatableId: this.form.locatableId,
@@ -486,7 +487,7 @@ export default {
     },
     createOrder() {
       this.loading = true;
-      let order = this.getFormOrderData()
+      let order = this.getFormOrderData();
       this.$crud.create('apiRoutes.qfulfillment.orders', order).then(res => {
         this.$alert.info({ message: `${this.$tr('isite.cms.message.recordCreated')}` });
         this.$router.push({ name: 'qfulfillment.admin.orders.index' });
@@ -498,7 +499,7 @@ export default {
     },
     updateOrder() {
       this.loading = true;
-      let order = this.getFormOrderData()
+      let order = this.getFormOrderData();
       this.$crud.update('apiRoutes.qfulfillment.orders', this.orderId, order).then(res => {
         this.$alert.info({ message: `${this.$tr('isite.cms.message.recordUpdated')}` });
       }).catch(err => {

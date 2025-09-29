@@ -7,4 +7,5 @@ export default {
   version: moduleVersion,
   orders: `${urlBase}/orders`,
   orderItems: `${urlBase}/order-items`,
+  shipments: `${urlBase}/shipments`,
 };
