@@ -8,4 +8,5 @@ export default {
   orders: `${urlBase}/orders`,
   orderItems: `${urlBase}/order-items`,
   shipments: `${urlBase}/shipments`,
+  shipmentItems: `${urlBase}/shipment-items`,
 };

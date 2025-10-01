@@ -1,6 +1,6 @@
 <template>
   <div id="pageId" class="relative-position">
-    <page-actions :title="$tr($route.meta.title)" class="q-mb-md" @refresh="init" />
+    <page-actions :title="$tr($route.meta.title)" class="q-mb-md" @refresh="getOrderItems" />
 
     <div class="box box-auto-height q-mb-md">
       <div class="box-title q-mb-md row justify-between items-center">
@@ -9,8 +9,8 @@
           Filtros
         </div>
         <q-toggle
-          v-model="allowDispatch"
-          label="Crear Despachos"
+          v-model="programming"
+          label="Crear Programación"
           color="blue"
         />
       </div>
@@ -32,7 +32,7 @@
       </div>
       <div class="q-mb-md text-info">
         <q-icon name="fa-light fa-circle-info" size="sm" class="q-mr-md" />
-        Debes seleccionar un filtro para ver el acumulado, puedes filtrar por referencia o por cliente.
+        Puedes filtrar por referencia o por cliente. Tambien puedes crear programaciones.
       </div>
     </div>
 
@@ -87,21 +87,28 @@
                 </div>
               </div>
             </div>
-            <!-- Dispatch -->
-            <div v-else-if="props.col.name == 'dispatch'">
+            <!-- Total -->
+            <div v-else-if="props.col.name == 'total'">
               <q-btn
+                v-if="programming"
+                :disabled="!props.row.dispatchQuantity"
                 unelevated rounded no-caps
-                label="Despachar"
-                icon="fas fa-rocket"
                 color="blue"
                 @click="validateDispatchItem(props.row)"
-              />
+              >
+                <div class=" row items-center">
+                  <q-icon name="fas fa-rocket-launch" size="16px" class="q-mr-sm" />
+                  {{ $trn(props.row.dispatchQuantity) }}
+                </div>
+                Programar
+              </q-btn>
+              <span v-else>{{ $trn(props.value) }}</span>
             </div>
             <!--- Tallas -->
             <div v-else-if="sizeRange.includes(props.col.name)">
               <span v-html="getSizeColumnValue(props.row, props.col.name)"></span>
               <q-popup-edit
-                v-if="allowDispatch && props.row[props.col.name]"
+                v-if="programming && props.row[props.col.name]"
                 v-model="props.row[ getDispatchSizeLabelName(props.col.name) ]"
                 color="blue-grey"
                 v-slot="scope"
@@ -117,6 +124,7 @@
                   @keyup.enter="() => {
                     scope.value = validateDispatchQuantity(scope.value, props.row[props.col.name])
                     scope.set()
+                    setDispatchTotalQuantity(props.row)
                   }"
                   type="number"
                   inputmode="numeric"
@@ -140,11 +148,11 @@
               :key="`tot-${size}`"
               :class="sizeTotals.bySize[size] ? 'text-blue' : 'text-blue-grey'"
             >
-              {{ sizeTotals.bySize[size] }}
+              {{ $trn(sizeTotals.bySize[size]) }}
             </q-td>
             <!-- Total general -->
-            <q-td class="text-right bg-blue text-bold text-white">
-              {{ sizeTotals.grand }}
+            <q-td class="text-ceenter text-blue text-bold">
+              {{ $trn(sizeTotals.grand) }}
             </q-td>
           </q-tr>
         </template>
@@ -167,7 +175,7 @@ export default {
   data() {
     return {
       loading: false,
-      allowDispatch: true,
+      programming: false,
       orderItems: [],
       sizes: { min: 33, max: 46 },
       pagination: {
@@ -175,7 +183,7 @@ export default {
         rowsPerPage: 0
       },
       filter: {
-        shoeId: 1,
+        shoeId: null,
         accountId: null
       }
     };
@@ -225,7 +233,7 @@ export default {
           name: i, label: i, field: i, align: 'center',
           classes: row => [
             row[i] ? 'text-blue text-bold' : 'text-blue-grey',
-            row[i] && this.allowDispatch ? 'cursor-pointer' : ''
+            row[i] && this.programming ? 'cursor-pointer' : ''
           ].join(' ')
         });
       }
@@ -234,19 +242,9 @@ export default {
         name: 'total',
         label: 'Total',
         field: 'quantity',
-        align: 'right',
+        align: 'center',
         classes: 'bg-grey-1 text-bold text-blue-grey'
       });
-
-      //dispatch column
-      if (this.allowDispatch) {
-        columns.push({
-          name: 'dispatch',
-          label: 'Despacho',
-          align: 'center',
-          style: 'min-width: 180px;'
-        });
-      }
 
       return columns;
     },
@@ -276,7 +274,8 @@ export default {
         byShoe: {
           type: 'select',
           props: {
-            label: 'Referencia'
+            label: 'Referencia',
+            clearable: true
           },
           loadOptions: {
             apiRoute: 'apiRoutes.qfulfillment.orderItems',
@@ -291,7 +290,8 @@ export default {
         byAccount: {
           type: 'select',
           props: {
-            label: 'Cliente'
+            label: 'Cliente',
+            clearable: true
           },
           loadOptions: {
             apiRoute: 'apiRoutes.qfulfillment.orders',
@@ -308,6 +308,7 @@ export default {
   },
   methods: {
     init() {
+      this.getOrderItems();
     },
     //Get data
     getOrderItems() {
@@ -317,8 +318,8 @@ export default {
         let requestParams = {
           refresh: true,
           params: {
-            include: 'order.account,order.locatable.city.translations,shoe.translations',
-            filter: { orderByDueDate: 'asc' }
+            include: 'order.account,order.locatable.city.translations,shoe.translations,shipmentItems',
+            filter: { orderByDueDate: 'asc', withPendingQuantity: true }
           }
         };
         //Filters
@@ -337,8 +338,11 @@ export default {
       const shoe = item.shoe;
       const selectedOptions = item.options;
       const daysOff = this.$date.getDaysDiff(`${item.order.dueDate} 23:59:59`);
+
       let newRow = {
         ...item,
+        quantity: 0,
+        dispatchQuantity: 0,
         daysOff,
         colorDaysOff: daysOff < 3 ? 'red' : daysOff < 7 ? 'orange' : 'green',
         labelOptions: selectedOptions.map(i => {
@@ -347,44 +351,61 @@ export default {
           return `<div class="text-caption text-blue-grey">- ${label}</div>`;
         }).join('')
       };
-
+      const shippedSizes = this.unifyShippedSizes(item.shipmentItems ?? []);
       for (let i = this.sizes.min; i <= this.sizes.max; i++) {
         const itemSize = item?.sizes?.find(s => s.size == i);
-        const sizeQuantity = itemSize ? itemSize.quantity : 0;
+        const sizeQuantity = (itemSize ? itemSize.quantity : 0) - (shippedSizes[i] || 0);
         newRow[i] = sizeQuantity;
         newRow[this.getDispatchSizeLabelName(i)] = sizeQuantity;
+        newRow.quantity += sizeQuantity;
+        newRow.dispatchQuantity += sizeQuantity;
       }
 
       return newRow;
+    },
+    unifyShippedSizes(items) {
+      const unifiedSizes = {};
+      for (const item of items) {
+        for (const { size, quantity } of item.sizes) {
+          unifiedSizes[size] = (unifiedSizes[size] || 0) + quantity;
+        }
+      }
+
+      return unifiedSizes;
     },
     getDispatchSizeLabelName(size) {
       return `${size}Dispatch`;
     },
     getSizeColumnValue(row, size) {
       if (!row[size]) return row[size];
-      const sizeQuantity = row[size];
-      const dispatchQuantity = row[this.getDispatchSizeLabelName(size)] || 0;
-      if (this.allowDispatch && sizeQuantity != dispatchQuantity) {
+      const sizeQuantity = this.$trn(row[size]);
+      const dispatchQuantity = this.$trn(row[this.getDispatchSizeLabelName(size)] || 0);
+      if (this.programming && sizeQuantity != dispatchQuantity) {
         return `<span class="text-orange">${dispatchQuantity}</span> / ${sizeQuantity}`;
       }
       return sizeQuantity;
     },
     validateDispatchQuantity(value, max) {
       let val = Number(value);
-      if (isNaN(val) || val < 1 || val > max) val = max;
+      if (isNaN(val) || val > max) val = max;
       return val;
     },
-    validateDispatchItem(row) {
+    setDispatchTotalQuantity(row) {
       const dispatchQuantity = this.sizeRange.reduce((sum, size) => {
         return sum + (Number(row[this.getDispatchSizeLabelName(size)]) || 0);
       }, 0);
+      const rowIndex = this.orderItems.findIndex(i => i.id == row.id);
+      this.orderItems[rowIndex].dispatchQuantity = dispatchQuantity;
+    },
+    validateDispatchItem(row) {
+      const dispatchQuantity = row.dispatchQuantity;
       let quantityLabel = `<b class="text-blue">${row.quantity}</b>`;
       if (dispatchQuantity != row.quantity)
         quantityLabel = `<b class="text-orange">${dispatchQuantity}</b>/${quantityLabel}`;
 
       this.$alert.info({
         mode: 'modal',
-        title: 'Confirmar Despacho',
+        title: 'Confirmar Programación',
         message: `<div class="text-blue-grey">
         <div><b>Cliente: </b> ${row.order.account.title}</div>
         <div><b>Cantidad: </b>${quantityLabel}</div>
@@ -395,7 +416,7 @@ export default {
         actions: [
           { label: 'Cancelar', color: 'grey' },
           {
-            label: 'Despachar',
+            label: 'Programar',
             color: 'blue',
             handler: () => this.dispatchItem(row, dispatchQuantity)
           }
@@ -404,28 +425,15 @@ export default {
     },
     dispatchItem(row, dispatchQuantity) {
       const dispatchData = {
-        orderId: row.order.id,
-        totalItems: dispatchQuantity,
-        shippedAt: row.order.dueDate,
-        items: [{
-          orderItemId: row.id,
-          quantity: dispatchQuantity,
-          sizes: []
-        }]
-      };
-
-      this.sizeRange.forEach(size => {
-        dispatchData.items[0].sizes.push({
+        orderItemId: row.id,
+        quantity: dispatchQuantity,
+        sizes: this.sizeRange.map(size => ({
           size,
           quantity: row[this.getDispatchSizeLabelName(size)] || 0
-        });
-      });
+        }))
+      };
 
-      this.$crud.updateOrCreate(
-        'apiRoutes.qfulfillment.shipments',
-        {orderId: dispatchData.orderId},
-        dispatchData
-      )
+      this.$crud.create('apiRoutes.qfulfillment.shipmentItems', dispatchData)
         .then(response => {
           this.$alert.success('Despacho creado exitosamente');
           this.getOrderItems();
