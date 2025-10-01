@@ -32,7 +32,9 @@
       </div>
       <div class="q-mb-md text-info">
         <q-icon name="fa-light fa-circle-info" size="sm" class="q-mr-md" />
-        Puedes filtrar por referencia o por cliente. Tambien puedes crear programaciones.
+        Aqui se muestra el acumulado con cantidades pendientes por programar. Activa la acción de <b>Crear Programación</b>
+        da click en las cantidades para ajustar la cantidad a programar y luego presiona el boton <b>Programar</b>.
+        Si la cantidad a programar es menor a la pendiente, se hará una programación parcial.
       </div>
     </div>
 
@@ -49,9 +51,9 @@
           <q-td :props="props">
             <!-- id -->
             <div v-if="props.col.name == 'id'">
-              Orden Compra: {{ props.value }}
+              ID Interno: {{ props.value }}
               <div class="text-caption text-grey">
-                Cliente: {{ props.row.order.externalId }}
+                Orden Compra: {{ props.row.order.externalId }}
               </div>
             </div>
             <!-- dueDate -->
