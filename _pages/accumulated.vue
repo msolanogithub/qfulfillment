@@ -99,7 +99,7 @@
                 @click="validateDispatchItem(props.row)"
               >
                 <div class=" row items-center">
-                  <q-icon name="fas fa-rocket-launch" size="16px" class="q-mr-sm" />
+                  <q-icon name="fa-light fa-conveyor-belt-boxes" size="16px" class="q-mr-sm" />
                   {{ $trn(props.row.dispatchQuantity) }}
                 </div>
                 Programar
