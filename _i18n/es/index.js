@@ -8,6 +8,7 @@ export default {
         adminUpdateOrder: 'Actualizar Orden de Compra',
         adminAccumulated: 'Acumulado',
         adminProgramming: 'Programación',
+        adminShipments: 'Despachos',
       },
       newOrder: 'Nueva Orden de Compra',
       updateOrder: 'Actualizar Orden de Compra',

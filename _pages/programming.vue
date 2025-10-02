@@ -96,7 +96,7 @@
         <template v-slot:bottom-row>
           <q-tr class="bg-grey-1 text-bold">
             <!-- Celdas fijas de la izquierda: ajusta el colspan según tus columnas fijas -->
-            <q-td :colspan="4" class="text-blue-grey">Totales</q-td>
+            <q-td :colspan="4" class="text-blue-grey text-right">Totales</q-td>
             <!-- Totales por talla -->
             <q-td
               v-for="size in sizeRange"

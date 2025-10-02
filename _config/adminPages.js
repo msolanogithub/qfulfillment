@@ -73,5 +73,20 @@ export default {
       refresh: true,
       breadcrumb: ['qfulfillment.accumulated']
     }
+  },
+  shipments: {
+    permission: 'ifulfillment.orders.index',
+    activated: true,
+    authenticated: true,
+    path: '/fulfillment/shipments/index',
+    name: 'qfulfillment.admin.shipments.index',
+    page: () => import('modules/qfulfillment/_pages/shipments'),
+    layout: () => import('layouts/master.vue'),
+    title: 'ifulfillment.cms.sidebar.adminShipments',
+    icon: 'fa-light fa-truck-fast',
+    subHeader: {
+      refresh: true,
+      breadcrumb: ['qfulfillment.accumulated','qfulfillment.programming']
+    }
   }
 };

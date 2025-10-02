@@ -8,7 +8,8 @@ export default [
     children: [
       pages.qfulfillment.orders,
       pages.qfulfillment.accumulated,
-      pages.qfulfillment.programming
+      pages.qfulfillment.programming,
+      pages.qfulfillment.shipments
     ]
   }
 ];
