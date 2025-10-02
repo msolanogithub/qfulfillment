@@ -51,7 +51,8 @@
           <q-td :props="props">
             <!-- id -->
             <div v-if="props.col.name == 'id'">
-              ID Interno: {{ props.value }}
+              Orden Producción
+              : {{ props.value }}
               <div class="text-caption text-grey">
                 Orden Compra: {{ props.row.order.externalId }}
               </div>
@@ -153,7 +154,7 @@
               {{ $trn(sizeTotals.bySize[size]) }}
             </q-td>
             <!-- Total general -->
-            <q-td class="text-ceenter text-blue text-bold">
+            <q-td class="text-center text-blue text-bold">
               {{ $trn(sizeTotals.grand) }}
             </q-td>
           </q-tr>
@@ -205,7 +206,7 @@ export default {
           label: this.$tr('ifulfillment.cms.dueDate'),
           field: 'order',
           align: 'left',
-          format: val => val.dueDate
+          format: val => this.$trd(val.dueDate, {type: 'small'})
         },
         {
           name: 'shoe',

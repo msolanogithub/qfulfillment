@@ -7,7 +7,8 @@ export default [
     icon: 'fa-light fa-arrow-progress',
     children: [
       pages.qfulfillment.orders,
-      pages.qfulfillment.accumulated
+      pages.qfulfillment.accumulated,
+      pages.qfulfillment.programming
     ]
   }
 ];

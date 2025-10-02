@@ -58,5 +58,20 @@ export default {
       refresh: true,
       breadcrumb: ['qfulfillment.orders']
     }
+  },
+  programming: {
+    permission: 'ifulfillment.orders.index',
+    activated: true,
+    authenticated: true,
+    path: '/fulfillment/programming/index',
+    name: 'qfulfillment.admin.programming.index',
+    page: () => import('modules/qfulfillment/_pages/programming'),
+    layout: () => import('layouts/master.vue'),
+    title: 'ifulfillment.cms.sidebar.adminProgramming',
+    icon: 'fa-light fa-conveyor-belt-boxes',
+    subHeader: {
+      refresh: true,
+      breadcrumb: ['qfulfillment.accumulated']
+    }
   }
 };
