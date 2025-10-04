@@ -8,6 +8,11 @@
           <q-icon name="fa-light fa-filter" class="q-mr-sm" />
           Filtros
         </div>
+        <q-toggle
+          v-model="allowSplit"
+          label="Dividir Programación"
+          color="blue"
+        />
       </div>
       <div class="row q-col-gutter-md">
         <div class="col">
@@ -89,6 +94,53 @@
                 </div>
               </div>
             </div>
+            <!--- Tallas -->
+            <div v-else-if="sizeRange.includes(props.col.name)">
+              <span v-html="getSizeColumnValue(props.row, props.col.name)"></span>
+              <q-popup-edit
+                v-if="allowSplit && props.row[props.col.name]"
+                v-model="props.row.splitSize[props.col.name]"
+                color="blue-grey"
+                v-slot="scope"
+              >
+                <div class="text-blue-grey q-mb-sm">
+                  {{ props.row.orderItem.shoe.title }}
+                </div>
+                <q-input
+                  v-model="scope.value"
+                  color="blue-grey"
+                  :label="`Talla ${props.col.name} (${props.row[props.col.name]})`"
+                  outlined autofocus
+                  @keyup.enter="() => {
+                    scope.value = validateSplitQuantity(scope.value, props.row[props.col.name])
+                    scope.set()
+                    setSplitTotalQuantity(props.row)
+                  }"
+                  type="number"
+                  inputmode="numeric"
+                  min="1"
+                  step="1"
+                  hint="Presiona Enter para guardar"
+                />
+              </q-popup-edit>
+            </div>
+            <!-- Total -->
+            <div v-else-if="props.col.name == 'total'">
+              <q-btn
+                v-if="allowSplit"
+                :disabled="!props.row.splitQuantity || props.row.splitQuantity == props.row.quantity"
+                unelevated rounded no-caps
+                color="blue"
+                @click="validateSplitItem(props.row)"
+              >
+                <div class=" row items-center">
+                  <q-icon name="fa-light fa-file-dashed-line" size="16px" class="q-mr-sm" />
+                  {{ $trn(props.row.splitQuantity) }}
+                </div>
+                Dividir
+              </q-btn>
+              <span v-else>{{ $trn(props.value) }}</span>
+            </div>
             <div v-else>{{ props.value }}</div>
           </q-td>
         </template>
@@ -130,7 +182,7 @@ export default {
   data() {
     return {
       loading: false,
-      programming: false,
+      allowSplit: false,
       shipmentItems: [],
       sizes: { min: 33, max: 46 },
       pagination: {
@@ -218,7 +270,7 @@ export default {
           name: i, label: i, field: i, align: 'center',
           classes: row => [
             row[i] ? 'text-blue text-bold' : 'text-blue-grey',
-            row[i] && this.programming ? 'cursor-pointer' : ''
+            row[i] && this.allowSplit ? 'cursor-pointer' : ''
           ].join(' ')
         });
       }
@@ -268,7 +320,7 @@ export default {
           params: {
             include: 'orderItem.order.account,orderItem.shoe.translations',
             filter: { shipmentId: { where: 'null' } },
-            order: {field: 'created_at', way: 'asc'}
+            order: { field: 'created_at', way: 'asc' }
           }
         };
         //Filters
@@ -294,6 +346,8 @@ export default {
       let newRow = {
         ...item,
         daysOff,
+        splitSize: {},
+        splitQuantity: 0,
         daysFromCreation,
         colorDaysOff: daysOff < 3 ? 'red' : daysOff < 7 ? 'orange' : 'green',
         labelOptions: selectedOptions.map(i => {
@@ -307,9 +361,85 @@ export default {
         const itemSize = item.sizes?.find(s => s.size == i);
         const sizeQuantity = (itemSize ? itemSize.quantity : 0);
         newRow[i] = sizeQuantity;
+        newRow.splitSize[i] = sizeQuantity;
+        newRow.splitQuantity += sizeQuantity;
       }
 
       return newRow;
+    },
+    getSizeColumnValue(row, size) {
+      if (!row[size]) return row[size];
+      const sizeQuantity = this.$trn(row[size]);
+      const splitQuantity = this.$trn(row.splitSize[size] || 0);
+      if (this.allowSplit && sizeQuantity != splitQuantity) {
+        return `<span class="text-orange">${splitQuantity}</span> / ${sizeQuantity}`;
+      }
+      return sizeQuantity;
+    },
+    validateSplitQuantity(value, max) {
+      let val = Number(value);
+      if (isNaN(val) || val > max) val = max;
+      return val;
+    },
+    setSplitTotalQuantity(row) {
+      const splitQuantity = this.sizeRange.reduce((sum, size) => {
+        return sum + (Number(row.splitSize[size]) || 0);
+      }, 0);
+      const rowIndex = this.shipmentItems.findIndex(i => i.id == row.id);
+      this.shipmentItems[rowIndex].splitQuantity = splitQuantity;
+    },
+    validateSplitItem(row) {
+      const splitQuantity = row.splitQuantity;
+      const quantityLabel = `<b class="text-orange">${splitQuantity}</b>/<b class="text-blue">${row.quantity}</b>`;
+
+      this.$alert.info({
+        mode: 'modal',
+        title: 'Confirmar División',
+        message: `<div class="text-blue-grey">
+        <div><b>Cliente: </b> ${row.orderItem.order.account.title}</div>
+        <div><b>Cantidad: </b>${quantityLabel}</div>
+        <div><b>Referencia: </b> ${row.orderItem.shoe.title}</div>
+        <div class="text-caption text-grey q-mt-sm">${row.labelOptions}</div>
+        </div>
+        `,
+        actions: [
+          { label: 'Cancelar', color: 'grey' },
+          {
+            label: 'Programar',
+            color: 'blue',
+            handler: () => this.splitItem(row, splitQuantity)
+          }
+        ]
+      });
+    },
+    splitItem(row, splitQuantity) {
+      this.loading = true;
+      const updateShipmentItem = {
+        orderItemId: row.orderItem.id,
+        quantity: row.quantity - splitQuantity,
+        sizes: this.sizeRange.map(size => ({
+          size,
+          quantity: row[size] - (row.splitSize[size] || 0)
+        }))
+      };
+      const newShipmentItem = {
+        orderItemId: row.orderItem.id,
+        quantity: splitQuantity,
+        sizes: this.sizeRange.map(size => ({
+          size,
+          quantity: row.splitSize[size] || 0
+        }))
+      };
+
+      Promise.all([
+        this.$crud.update('apiRoutes.qfulfillment.shipmentItems', row.id, updateShipmentItem),
+        this.$crud.create('apiRoutes.qfulfillment.shipmentItems', newShipmentItem)
+      ]).then(response => {
+        this.$alert.success('Division creada exitosamente');
+        this.getShipmentItems();
+      }).catch(error => {
+        this.$alert.error('Error al crear la división');
+      })
     }
   }
 };
