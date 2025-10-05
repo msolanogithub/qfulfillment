@@ -520,6 +520,8 @@ export default {
       const newShipmentItem = {
         orderItemId: row.orderItem.id,
         quantity: splitQuantity,
+        supplierId: row.supplierId,
+        stageId: row.stageId,
         sizes: this.sizeRange.map(size => ({
           size,
           quantity: row.splitSize[size] || 0
