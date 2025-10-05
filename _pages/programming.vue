@@ -29,6 +29,13 @@
             @update:modelValue="filter.shoeId = null; getShipmentItems()"
           />
         </div>
+        <div class="col">
+          <dynamic-field
+            v-model="filter.supplierId"
+            :field="dynamicFields.supplierFilter"
+            @update:modelValue="getShipmentItems()"
+          />
+        </div>
       </div>
       <div class="q-mb-md text-info">
         <q-icon name="fa-light fa-circle-info" size="sm" class="q-mr-md" />
@@ -94,6 +101,54 @@
                 </div>
               </div>
             </div>
+            <!-- supplier -->
+            <div v-else-if="props.col.name == 'supplier'" class="cursor-pointer">
+              <div class="row items-center no-wrap">
+                <div class="q-mr-sm">
+                  <q-icon
+                    :name="props.value.icon"
+                    size="sm" :color="props.row.stage.color"
+                    class="q-mr-sm"
+                  />
+                </div>
+                <div>
+                  {{ props.value.title }}
+                  <div :class="`text-caption text-${props.row.stage.color}`">
+                    {{ props.row.stage.title }}
+                  </div>
+                </div>
+              </div>
+              <q-popup-edit
+                v-model="props.row.name"
+                @before-show="row => {
+                  form.stageId = props.row.stageId;
+                  form.supplierId = props.row.supplierId
+                }">
+                <div class="q-mb-md">
+                  <div class="text-blue-grey"><b>Orden:</b> {{ props.row.orderItem.id }}</div>
+                  <div class="text-blue-grey"><b>Cliente:</b> {{ props.row.orderItem.order.account.title }}</div>
+                  <div class="text-blue-grey"><b>Referencia:</b> {{ props.row.orderItem.shoe.title }}</div>
+                </div>
+                <dynamic-field v-model="form.supplierId" :field="dynamicFields.supplierId" />
+                <dynamic-field v-model="form.stageId" :field="dynamicFields.stageId" />
+                <!-- Actions -->
+                <div class="q-mt-md row justify-end q-gutter-sm">
+                  <q-btn
+                    unelevated rounded no-caps
+                    label="Cancelar"
+                    color="grey"
+                    v-close-popup
+                  />
+                  <q-btn
+                    unelevated rounded no-caps
+                    label="Actualizar"
+                    color="green"
+                    v-close-popup
+                    @click="updateItem(props.row, props.rowIndex)"
+                  />
+                </div>
+              </q-popup-edit>
+            </div>
             <!--- Tallas -->
             <div v-else-if="sizeRange.includes(props.col.name)">
               <span v-html="getSizeColumnValue(props.row, props.col.name)"></span>
@@ -148,7 +203,7 @@
         <template v-slot:bottom-row>
           <q-tr class="bg-grey-1 text-bold">
             <!-- Celdas fijas de la izquierda: ajusta el colspan según tus columnas fijas -->
-            <q-td :colspan="4" class="text-blue-grey text-right">Totales</q-td>
+            <q-td :colspan="5" class="text-blue-grey text-right">Totales</q-td>
             <!-- Totales por talla -->
             <q-td
               v-for="size in sizeRange"
@@ -191,7 +246,12 @@ export default {
       },
       filter: {
         shoeId: null,
-        accountId: null
+        accountId: null,
+        supplierId: null
+      },
+      form: {
+        supplierId: null,
+        stageId: null
       }
     };
   },
@@ -230,6 +290,34 @@ export default {
               id: row => row.id
             }
           }
+        },
+        supplierFilter: {
+          type: 'select',
+          props: {
+            label: 'Proveedor',
+            clearable: true
+          },
+          loadOptions: {
+            apiRoute: 'apiRoutes.qfulfillment.supplierTypes'
+          }
+        },
+        supplierId: {
+          type: 'select',
+          props: {
+            label: 'Proveedor'
+          },
+          loadOptions: {
+            apiRoute: 'apiRoutes.qfulfillment.supplierTypes'
+          }
+        },
+        stageId: {
+          type: 'select',
+          props: {
+            label: 'Etapa'
+          },
+          loadOptions: {
+            apiRoute: 'apiRoutes.qfulfillment.shipmentItemStages'
+          }
         }
       };
     },
@@ -262,6 +350,12 @@ export default {
           field: 'orderItem',
           align: 'left',
           format: val => val.shoe.title
+        },
+        {
+          name: 'supplier',
+          label: 'Proveedor',
+          field: 'supplier',
+          align: 'left'
         }
       ];
 
@@ -319,13 +413,14 @@ export default {
           refresh: true,
           params: {
             include: 'orderItem.order.account,orderItem.shoe.translations',
-            filter: { shipmentId: { where: 'null' } },
+            filter: { shippingId: { where: 'null' } },
             order: { field: 'created_at', way: 'asc' }
           }
         };
         //Filters
         if (this.filter.shoeId) requestParams.params.filter.shoeId = this.filter.shoeId;
         if (this.filter.accountId) requestParams.params.filter.accountId = this.filter.accountId;
+        if (this.filter.supplierId) requestParams.params.filter.supplierId = this.filter.supplierId;
         //Request
         this.$crud.index('apiRoutes.qfulfillment.shipmentItems', requestParams).then(response => {
           this.shipmentItems = response.data.map(i => this.mapShipmentItem(i));
@@ -439,7 +534,28 @@ export default {
         this.getShipmentItems();
       }).catch(error => {
         this.$alert.error('Error al crear la división');
-      })
+      });
+    },
+    updateItem(row, rowInex) {
+      this.loading = true;
+      const requestData = {
+        i: row.id,
+        supplierId: this.form.supplierId,
+        stageId: this.form.stageId
+      };
+
+      this.$crud.update('apiRoutes.qfulfillment.shipmentItems', row.id, requestData).then(response => {
+        this.shipmentItems[rowInex] = {
+          ...this.shipmentItems[rowInex],
+          supplierId: response.data.supplierId,
+          supplier: response.data.supplier,
+          stageId: response.data.stageId,
+          stage: response.data.stage
+        };
+        this.$alert.success('Registro actualizado exitosamente');
+      }).catch(() => {
+        this.$alert('Error al actualizar el registro');
+      }).finally(() => this.loading = false);
     }
   }
 };

@@ -21,125 +21,131 @@
           :field="dynamicFields.accountId"
           @update:modelValue="getShipmentItems"
         />
-        <dynamic-field
-          v-model="formShipment.shippedAt"
-          :field="dynamicFields.date"
-        />
-        <dynamic-field
-          v-model="formShipment.comments"
-          :field="dynamicFields.comment"
-        />
-        <!-- ShippemntItems -->
         <div v-if="shipmentItems.length">
-          <div class="q-mb-md text-info q-mt-md">
-            <q-icon name="fa-light fa-circle-info" size="sm" class="q-mr-md" />
-            Esta lista tiene todas las referencias pendientes de despacho de este cliente.
-            Remueve de la lista las referencias que no necesites despachar.
-            Las referencias que remuevas podras agregarlas en un proximo despacho
-          </div>
-          <q-table
-            flat bordered separator="cell"
-            :rows="newItems.items"
-            :columns="columns"
-            row-key="id"
-            hide-pagination
-            :pagination="pagination"
-          >
-            <template v-slot:body-cell="props">
-              <q-td :props="props">
-                <!-- dueDate -->
-                <div v-if="props.col.name == 'dueDate'">
-                  <div class="row items-center no-wrap">
-                    <q-icon
-                      name="fas fa-hourglass-end"
-                      :color="props.row.colorDaysOff"
-                      class="q-mr-sm" size="xs"
-                    />
-                    <div>
-                      {{ props.value }}
-                      <div class="text-caption text-grey">
-                        {{ props.row.daysOff }} Días restantes
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <!-- createdAt -->
-                <div v-else-if="props.col.name == 'createdAt'">
-                  {{ props.value }}
-                  <div class="text-caption text-grey">
-                    {{ props.row.daysFromCreation }} Días Transcurridos
-                  </div>
-                </div>
-                <!-- shoe -->
-                <div v-else-if="props.col.name == 'shoe'">
-                  <div class="row items-center no-wrap">
-                    <div class="q-mr-sm">
-                      <help-text
-                        :title="props.row.orderItem.shoe.title"
-                        :description="props.row.labelOptions"
+          <dynamic-field
+            v-model="formShipment.shippedAt"
+            :field="dynamicFields.date"
+          />
+          <dynamic-field
+            v-model="formShipment.comments"
+            :field="dynamicFields.comment"
+          />
+          <!-- ShippemntItems -->
+          <div>
+            <div class="q-mb-md text-info q-mt-md">
+              <q-icon name="fa-light fa-circle-info" size="sm" class="q-mr-md" />
+              Esta lista tiene todas las referencias pendientes de despacho de este cliente.
+              Remueve de la lista las referencias que no necesites despachar.
+              Las referencias que remuevas podras agregarlas en un proximo despacho
+            </div>
+            <q-table
+              flat bordered separator="cell"
+              :rows="newItems.items"
+              :columns="columns"
+              row-key="id"
+              hide-pagination
+              :pagination="pagination"
+            >
+              <template v-slot:body-cell="props">
+                <q-td :props="props">
+                  <!-- dueDate -->
+                  <div v-if="props.col.name == 'dueDate'">
+                    <div class="row items-center no-wrap">
+                      <q-icon
+                        name="fas fa-hourglass-end"
+                        :color="props.row.colorDaysOff"
+                        class="q-mr-sm" size="xs"
                       />
-                    </div>
-                    <div>
-                      {{ props.row.orderItem.shoe.title }}
-                      <div class="text-caption text-grey">
-                        {{ props.row.orderItem.options.length }} Opciones
+                      <div>
+                        {{ props.value }}
+                        <div class="text-caption text-grey">
+                          {{ props.row.daysOff }} Días restantes
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <!-- locatable -->
-                <div v-else-if="props.col.name == 'locatable'">
-                  {{ props.value.city.name }}
-                  <div
-                    class="text-caption text-grey ellipsis"
-                    style="max-width: 200px"
-                  >
-                    {{ props.value.address }}
-                    <q-tooltip>{{ props.value.address }}</q-tooltip>
-                  </div>
-                </div>
-                <!-- Totales -->
-                <div v-else-if="props.col.name == 'total'">
-                  <q-btn
-                    unelevated rounded no-caps
-                    color="red-5"
-                    @click="removeShipmentItem(props.row, props.rowIndex)"
-                  >
-                    <div class=" row items-center">
-                      <q-icon name="fa-light fa-trash-xmark" size="16px" class="q-mr-sm" />
-                      {{ $trn(props.value) }}
+                  <!-- createdAt -->
+                  <div v-else-if="props.col.name == 'createdAt'">
+                    {{ props.value }}
+                    <div class="text-caption text-grey">
+                      {{ props.row.daysFromCreation }} Días Transcurridos
                     </div>
-                    Remover
-                  </q-btn>
-                </div>
-                <div v-else>{{ props.value }}</div>
-              </q-td>
-            </template>
+                  </div>
+                  <!-- shoe -->
+                  <div v-else-if="props.col.name == 'shoe'">
+                    <div class="row items-center no-wrap">
+                      <div class="q-mr-sm">
+                        <help-text
+                          :title="props.row.orderItem.shoe.title"
+                          :description="props.row.labelOptions"
+                        />
+                      </div>
+                      <div>
+                        {{ props.row.orderItem.shoe.title }}
+                        <div class="text-caption text-grey">
+                          {{ props.row.orderItem.options.length }} Opciones
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- locatable -->
+                  <div v-else-if="props.col.name == 'locatable'">
+                    {{ props.value.city.name }}
+                    <div
+                      class="text-caption text-grey ellipsis"
+                      style="max-width: 200px"
+                    >
+                      {{ props.value.address }}
+                      <q-tooltip>{{ props.value.address }}</q-tooltip>
+                    </div>
+                  </div>
+                  <!-- Totales -->
+                  <div v-else-if="props.col.name == 'total'">
+                    <q-btn
+                      unelevated rounded no-caps
+                      color="red-5"
+                      @click="removeShipmentItem(props.row, props.rowIndex)"
+                    >
+                      <div class=" row items-center">
+                        <q-icon name="fa-light fa-trash-xmark" size="16px" class="q-mr-sm" />
+                        {{ $trn(props.value) }}
+                      </div>
+                      Remover
+                    </q-btn>
+                  </div>
+                  <div v-else>{{ props.value }}</div>
+                </q-td>
+              </template>
 
-            <template v-slot:bottom-row>
-              <q-tr class="bg-grey-1 text-bold">
-                <!-- Celdas fijas de la izquierda: ajusta el colspan según tus columnas fijas -->
-                <q-td :colspan="5" class="text-blue-grey text-right">Totales</q-td>
-                <!-- Totales por talla -->
-                <q-td
-                  v-for="size in sizeRange"
-                  :key="`tot-${size}`"
-                  :class="newItems.totals.bySize[size] ? 'text-blue' : 'text-blue-grey'"
-                >
-                  {{ $trn(newItems.totals.bySize[size]) }}
-                </q-td>
-                <!-- Total general -->
-                <q-td class="text-center text-blue text-bold">
-                  {{ $trn(newItems.totals.grand) }}
-                </q-td>
-              </q-tr>
-            </template>
-          </q-table>
-          <!-- Actions -->
-          <div class="text-right q-mt-md">
-            <q-btn unelevated rounded color="green" label="Crear Despacho"
-                   no-caps :disable="!formShipment.shippedAt" @click="createShipment" />
+              <template v-slot:bottom-row>
+                <q-tr class="bg-grey-1 text-bold">
+                  <!-- Celdas fijas de la izquierda: ajusta el colspan según tus columnas fijas -->
+                  <q-td :colspan="5" class="text-blue-grey text-right">Totales</q-td>
+                  <!-- Totales por talla -->
+                  <q-td
+                    v-for="size in sizeRange"
+                    :key="`tot-${size}`"
+                    :class="newItems.totals.bySize[size] ? 'text-blue' : 'text-blue-grey'"
+                  >
+                    {{ $trn(newItems.totals.bySize[size]) }}
+                  </q-td>
+                  <!-- Total general -->
+                  <q-td class="text-center text-blue text-bold">
+                    {{ $trn(newItems.totals.grand) }}
+                  </q-td>
+                </q-tr>
+              </template>
+            </q-table>
+            <!-- Actions -->
+            <div class="text-right q-mt-md">
+              <q-btn unelevated rounded color="green" label="Crear Despacho"
+                     no-caps :disable="!formShipment.shippedAt" @click="createShipment" />
+            </div>
           </div>
+        </div>
+        <div v-else-if="formShipment.accountId" class="text-orange text-center">
+          <q-icon name="fa-light fa-circle-exclamation" size="sm" class="q-mr-md" />
+          Este Cliente no tiene referencias listas para despachos...
         </div>
         <!-- Loaaoding -->
         <inner-loading :visible="loadingCreation" />
@@ -157,7 +163,7 @@
       >
         <div v-if="shipment.comments" class="q-my-md text-info">
           <q-icon name="fa-light fa-comment-dots" size="16px" class="q-mr-sm" />
-          {{shipment.comments}}
+          {{ shipment.comments }}
         </div>
         <q-table
           flat bordered separator="cell"
@@ -390,7 +396,7 @@ export default {
           field: 'orderItem',
           align: 'left',
           format: val => val.shoe.title
-        },
+        }
       ];
 
       for (let i = this.sizes.min; i <= this.sizes.max; i++) {
@@ -431,7 +437,7 @@ export default {
           items,
           caption: `${s.totalItems} Pares | ${this.$trd(s.shippedAt, { type: 'small' })}`,
           totals: this.calcSizeTotals(items)
-        }
+        };
       });
 
       return mapped;
@@ -470,7 +476,7 @@ export default {
           refresh: true,
           params: {
             include: 'orderItem.order.account,orderItem.shoe.translations,orderItem.order.locatable.city.translations',
-            filter: { shipmentId: { where: 'null' }, accountId },
+            filter: { shippingId: { where: 'null' }, accountId, stageId: 1 },
             order: { field: 'created_at', way: 'asc' }
           }
         };

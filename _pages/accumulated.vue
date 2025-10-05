@@ -32,7 +32,8 @@
       </div>
       <div class="q-mb-md text-info">
         <q-icon name="fa-light fa-circle-info" size="sm" class="q-mr-md" />
-        Aqui se muestra el acumulado con cantidades pendientes por programar. Activa la acción de <b>Crear Programación</b>
+        Aqui se muestra el acumulado con cantidades pendientes por programar. Activa la acción de <b>Crear
+        Programación</b>
         da click en las cantidades para ajustar la cantidad a programar y luego presiona el boton <b>Programar</b>.
         Si la cantidad a programar es menor a la pendiente, se hará una programación parcial.
       </div>
@@ -162,6 +163,36 @@
       </q-table>
     </div>
 
+    <master-modal
+      v-model="confirmProgram.show"
+      title="Confirmar Programación"
+      icon="fa-light fa-conveyor-belt-boxes">
+      <div class="relative-position">
+        <div v-html="confirmProgram.body" />
+        <dynamic-field
+          v-model="confirmProgram.supplierId"
+          :field="dynamicFields.supplierId"
+          class="q-mb-md"
+        />
+        <div class="row justify-end q-gutter-sm">
+          <q-btn
+            rounded no-caps unelevated
+            label="Cancel"
+            color="grey"
+            @click="confirmProgram.show = false"
+          />
+          <q-btn
+            rounded no-caps unelevated
+            label="Programar"
+            :disabled="!confirmProgram.supplierId"
+            color="green"
+            @click="dispatchItem"
+          />
+        </div>
+        <inner-loading :visible="confirmProgram.loading" />
+      </div>
+    </master-modal>
+
     <inner-loading :visible="loading" />
   </div>
 </template>
@@ -188,6 +219,13 @@ export default {
       filter: {
         shoeId: null,
         accountId: null
+      },
+      confirmProgram: {
+        show: false,
+        row: null,
+        body: null,
+        supplierId: null,
+        loading: false
       }
     };
   },
@@ -206,7 +244,7 @@ export default {
           label: this.$tr('ifulfillment.cms.dueDate'),
           field: 'order',
           align: 'left',
-          format: val => this.$trd(val.dueDate, {type: 'small'})
+          format: val => this.$trd(val.dueDate, { type: 'small' })
         },
         {
           name: 'shoe',
@@ -304,6 +342,15 @@ export default {
               sublabel: row => this.$trn(parseInt(row.shoesQuantity)) + ' Pares',
               id: row => row.account.id
             }
+          }
+        },
+        supplierId: {
+          type: 'select',
+          props: {
+            label: 'Proveedor *'
+          },
+          loadOptions: {
+            apiRoute: 'apiRoutes.qfulfillment.supplierTypes'
           }
         }
       };
@@ -405,31 +452,29 @@ export default {
       let quantityLabel = `<b class="text-blue">${row.quantity}</b>`;
       if (dispatchQuantity != row.quantity)
         quantityLabel = `<b class="text-orange">${dispatchQuantity}</b>/${quantityLabel}`;
-
-      this.$alert.info({
-        mode: 'modal',
-        title: 'Confirmar Programación',
-        message: `<div class="text-blue-grey">
+      const body = `<div class="text-blue-grey q-mb-md">
         <div><b>Cliente: </b> ${row.order.account.title}</div>
         <div><b>Cantidad: </b>${quantityLabel}</div>
         <div><b>Referencia: </b> ${row.shoe.title}</div>
         <div class="text-caption text-grey q-mt-sm">${row.labelOptions}</div>
         </div>
-        `,
-        actions: [
-          { label: 'Cancelar', color: 'grey' },
-          {
-            label: 'Programar',
-            color: 'blue',
-            handler: () => this.dispatchItem(row, dispatchQuantity)
-          }
-        ]
-      });
+        `;
+      this.confirmProgram = {
+        ...this.confirmProgram,
+        show: true,
+        body, row,
+        supplierId: null
+      };
     },
-    dispatchItem(row, dispatchQuantity) {
+    dispatchItem() {
+      this.confirmProgram.loading = true;
+      const row = this.confirmProgram.row;
+      const dispatchQuantity = this.confirmProgram.row.dispatchQuantity;
+
       const dispatchData = {
         orderItemId: row.id,
         quantity: dispatchQuantity,
+        supplierId: this.confirmProgram.supplierId,
         sizes: this.sizeRange.map(size => ({
           size,
           quantity: row[this.getDispatchSizeLabelName(size)] || 0
@@ -442,6 +487,9 @@ export default {
           this.getOrderItems();
         }).catch(error => {
         this.$alert.error('Error al crear el despacho');
+      }).finally(() => {
+        this.confirmProgram.show = false;
+        this.confirmProgram.loading = false
       });
     }
   }
