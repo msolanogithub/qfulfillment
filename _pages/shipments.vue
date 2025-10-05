@@ -158,7 +158,7 @@
         class="box box-auto-height q-mb-md"
         icon="fa-light fa-truck-fast"
         header-class="text-blue-grey"
-        :label="shipment.account.title"
+        :label="`${shipment.id} | ${shipment.account.title}`"
         :caption="shipment.caption"
       >
         <div v-if="shipment.comments" class="q-my-md text-info">
