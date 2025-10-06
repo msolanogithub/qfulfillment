@@ -72,6 +72,23 @@ export default {
           ],
           requestParams: {
             include: 'account'
+          },
+          filters: {
+            accountId: {
+              type: 'select',
+              props: {
+                label: 'Cliente',
+                clearable: true
+              },
+              loadOptions: {
+                apiRoute: 'apiRoutes.qaccount.accounts',
+                select: {
+                  label: 'title',
+                  id: 'id',
+                  sublabel: i => `${i.documentType.title}: ${i.document}`
+                }
+              }
+            }
           }
         },
         update: {
