@@ -48,51 +48,19 @@
         hide-pagination
         :pagination="pagination"
       >
+        <template v-slot:body-cell-id="props">
+          <td-order-id :order="props.row.order" />
+        </template>
+        <template v-slot:body-cell-dueDate="props">
+          <td-due-date :order="props.row.order" />
+        </template>
+        <template v-slot:body-cell-shoe="props">
+          <td-shoe :shoe="props.row.shoe" :selected-options="props.row.options" />
+        </template>
+
         <template v-slot:body-cell="props">
           <q-td :props="props">
-            <!-- id -->
-            <div v-if="props.col.name == 'id'">
-              Orden Producción
-              : {{ props.value }}
-              <div class="text-caption text-grey">
-                Orden Compra: {{ props.row.order.externalId }}
-              </div>
-            </div>
-            <!-- dueDate -->
-            <div v-else-if="props.col.name == 'dueDate'">
-              <div class="row items-center no-wrap">
-                <q-icon
-                  name="fas fa-hourglass-end"
-                  :color="props.row.colorDaysOff"
-                  class="q-mr-sm" size="xs"
-                />
-                <div>
-                  {{ props.value }}
-                  <div class="text-caption text-grey">
-                    {{ props.row.daysOff }} Días restantes
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- shoe -->
-            <div v-else-if="props.col.name == 'shoe'">
-              <div class="row items-center no-wrap">
-                <div class="q-mr-sm">
-                  <help-text
-                    :title="props.row.shoe.title"
-                    :description="props.row.labelOptions"
-                  />
-                </div>
-                <div>
-                  {{ props.row.shoe.title }}
-                  <div class="text-caption text-grey">
-                    {{ props.row.options.length }} Opciones
-                  </div>
-                </div>
-              </div>
-            </div>
-            <!-- Total -->
-            <div v-else-if="props.col.name == 'total'">
+            <div v-if="props.col.name == 'total'">
               <q-btn
                 v-if="programming"
                 :disabled="!props.row.dispatchQuantity"
@@ -108,7 +76,6 @@
               </q-btn>
               <span v-else>{{ $trn(props.value) }}</span>
             </div>
-            <!--- Tallas -->
             <div v-else-if="sizeRange.includes(props.col.name)">
               <span v-html="getSizeColumnValue(props.row, props.col.name)"></span>
               <q-popup-edit
@@ -197,9 +164,11 @@
   </div>
 </template>
 <script>
+import { tdOrderId, tdDueDate, tdShoe } from 'modules/qfulfillment/_components/tdTable';
+
 export default {
   props: {},
-  components: {},
+  components: { tdOrderId, tdDueDate, tdShoe },
   watch: {},
   mounted() {
     this.$nextTick(function() {
@@ -234,17 +203,15 @@ export default {
       let columns = [
         {
           name: 'id',
-          label: 'ID',
+          label: 'Orden',
           field: 'order',
-          align: 'left',
-          format: val => val.id
+          align: 'center'
         },
         {
           name: 'dueDate',
           label: this.$tr('ifulfillment.cms.dueDate'),
           field: 'order',
-          align: 'left',
-          format: val => this.$trd(val.dueDate, { type: 'small' })
+          align: 'left'
         },
         {
           name: 'shoe',
@@ -368,7 +335,13 @@ export default {
         let requestParams = {
           refresh: true,
           params: {
-            include: 'order.account,order.locatable.city.translations,shoe.translations,shipmentItems',
+            include: [
+              'order.account',
+              'order.locatable.city.translations',
+              'shoe.translations',
+              'shoe.options',
+              'shipmentItems'
+            ].join(','),
             filter: { orderByDueDate: 'asc', withPendingQuantity: true }
           }
         };
@@ -386,20 +359,11 @@ export default {
     },
     mapOrderItem(item = null) {
       const shoe = item.shoe;
-      const selectedOptions = item.options;
-      const daysOff = this.$date.getDaysDiff(`${item.order.dueDate} 23:59:59`);
 
       let newRow = {
         ...item,
         quantity: 0,
-        dispatchQuantity: 0,
-        daysOff,
-        colorDaysOff: daysOff < 3 ? 'red' : daysOff < 7 ? 'orange' : 'green',
-        labelOptions: selectedOptions.map(i => {
-          let label = i.title;
-          if (i.parent) label = `[${i.parent.title}] ${i.title}`;
-          return `<div class="text-caption text-blue-grey">- ${label}</div>`;
-        }).join('')
+        dispatchQuantity: 0
       };
       const shippedSizes = this.unifyShippedSizes(item.shipmentItems ?? []);
       for (let i = this.sizes.min; i <= this.sizes.max; i++) {
@@ -489,7 +453,7 @@ export default {
         this.$alert.error('Error al crear el despacho');
       }).finally(() => {
         this.confirmProgram.show = false;
-        this.confirmProgram.loading = false
+        this.confirmProgram.loading = false;
       });
     }
   }

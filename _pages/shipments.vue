@@ -65,53 +65,23 @@
               hide-pagination
               :pagination="pagination"
             >
+              <template v-slot:body-cell-id="props">
+                <td-order-id :order="props.value" />
+              </template>
+              <template v-slot:body-cell-dueDate="props">
+                <td-due-date :order="props.value" />
+              </template>
+              <template v-slot:body-cell-shoe="props">
+                <td-shoe :shoe="props.value.shoe" :selected-options="props.value.options" />
+              </template>
+
               <template v-slot:body-cell="props">
                 <q-td :props="props">
-                  <!-- id -->
-                  <div v-if="props.col.name == 'id'">
-                    Orden Producción: <b>{{ props.value }}</b>
-                    <div class="text-caption text-grey">
-                      Orden Compra: {{ props.row.orderItem.order.externalId }}
-                    </div>
-                  </div>
-                  <!-- dueDate -->
-                  <div v-else-if="props.col.name == 'dueDate'">
-                    <div class="row items-center no-wrap">
-                      <q-icon
-                        name="fas fa-hourglass-end"
-                        :color="props.row.colorDaysOff"
-                        class="q-mr-sm" size="xs"
-                      />
-                      <div>
-                        {{ props.value }}
-                        <div class="text-caption text-grey">
-                          {{ props.row.daysOff }} Días restantes
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                   <!-- createdAt -->
-                  <div v-else-if="props.col.name == 'createdAt'">
+                  <div v-if="props.col.name == 'createdAt'">
                     {{ props.value }}
                     <div class="text-caption text-grey">
                       {{ props.row.daysFromCreation }} Días Transcurridos
-                    </div>
-                  </div>
-                  <!-- shoe -->
-                  <div v-else-if="props.col.name == 'shoe'">
-                    <div class="row items-center no-wrap">
-                      <div class="q-mr-sm">
-                        <help-text
-                          :title="props.row.orderItem.shoe.title"
-                          :description="props.row.labelOptions"
-                        />
-                      </div>
-                      <div>
-                        {{ props.row.orderItem.shoe.title }}
-                        <div class="text-caption text-grey">
-                          {{ props.row.orderItem.options.length }} Opciones
-                        </div>
-                      </div>
                     </div>
                   </div>
                   <!-- supplier -->
@@ -278,56 +248,27 @@
           hide-pagination
           :pagination="pagination"
         >
+
+          <template v-slot:body-cell-id="props">
+            <td-order-id :order="props.value" />
+          </template>
+
+          <template v-slot:body-cell-dueDate="props">
+            <td-due-date :order="props.value" />
+          </template>
+
+          <template v-slot:body-cell-shoe="props">
+            <td-shoe :shoe="props.value.shoe" :selected-options="props.value.options" />
+          </template>
+
           <template v-slot:body-cell="props">
             <q-td :props="props">
-              <!-- id -->
-              <div v-if="props.col.name == 'id'">
-                Orden Producción: <b>{{ props.value }}</b>
-                <div class="text-caption text-grey">
-                  Orden Compra: {{ props.row.orderItem.order.externalId }}
-                </div>
-              </div>
-              <!-- dueDate -->
-              <div v-else-if="props.col.name == 'dueDate'">
-                <div class="row items-center no-wrap">
-                  <q-icon
-                    name="fas fa-hourglass-end"
-                    :color="props.row.colorDaysOff"
-                    class="q-mr-sm" size="xs"
-                  />
-                  <div>
-                    {{ props.value }}
-                    <div class="text-caption text-grey">
-                      {{ props.row.daysOff }} Días restantes
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- Programming Date -->
-              <div v-else-if="props.col.name == 'createdAt'">
+              <div v-if="props.col.name == 'createdAt'">
                 {{ props.value }}
                 <div class="text-caption text-grey">
                   {{ props.row.daysFromCreation }} Días Transcurridos
                 </div>
               </div>
-              <!-- shoe -->
-              <div v-else-if="props.col.name == 'shoe'">
-                <div class="row items-center no-wrap">
-                  <div class="q-mr-sm">
-                    <help-text
-                      :title="props.row.orderItem.shoe.title"
-                      :description="props.row.labelOptions"
-                    />
-                  </div>
-                  <div>
-                    {{ props.row.orderItem.shoe.title }}
-                    <div class="text-caption text-grey">
-                      {{ props.row.orderItem.options.length }} Opciones
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- supplier -->
               <div v-else-if="props.col.name == 'supplier'" class="cursor-pointer">
                 <div class="row items-center no-wrap">
                   <div class="q-mr-sm">
@@ -405,6 +346,7 @@
   </div>
 </template>
 <script>
+import { tdOrderId, tdDueDate, tdShoe } from 'modules/qfulfillment/_components/tdTable';
 import { usePDF } from 'vue3-pdfmake'
 import { generateShipmentPdf } from 'modules/qfulfillment/_plugins/shipment-boxes-pdf';
 
@@ -414,7 +356,7 @@ export default {
     return { pdfmake }
   },
   props: {},
-  components: {},
+  components: { tdOrderId, tdDueDate, tdShoe },
   watch: {},
   mounted() {
     this.$nextTick(function() {
@@ -433,8 +375,8 @@ export default {
         rowsPerPage: 0
       },
       formShipment: {
-        accountId: null,
-        locatableId: null,
+        accountId: 6,
+        locatableId: 8,
         unitsPerPackage: null,
         shippedAt: null,
         comments: null
@@ -505,17 +447,17 @@ export default {
       let columns = [
         {
           name: 'id',
-          label: 'Orden ID',
+          label: 'Orden',
           field: 'orderItem',
-          align: 'left',
-          format: val => val.order.id
+          align: 'center',
+          format: val => val.order
         },
         {
           name: 'dueDate',
           label: this.$tr('ifulfillment.cms.dueDate'),
           field: 'orderItem',
           align: 'left',
-          format: val => this.$trd(val.order.dueDate, { type: 'small' })
+          format: val => val.order
         },
         {
           name: 'createdAt',
@@ -528,14 +470,13 @@ export default {
           name: 'shoe',
           label: 'Referencia',
           field: 'orderItem',
-          align: 'left',
-          format: val => val.shoe.title
+          align: 'center'
         },
         {
           name: 'supplier',
           label: 'Proveedor',
           field: 'supplier',
-          align: 'left'
+          align: 'center'
         }
       ];
 
@@ -599,6 +540,7 @@ export default {
             order: { field: 'shipped_at', way: 'asc' },
             include: [
               'items.orderItem.shoe.translations',
+              'items.orderItem.shoe.options',
               'items.orderItem.order.locatable.translations',
               'items.orderItem.order.locatable.city.translations',
               'items.orderItem.order.locatable.country.translations',
@@ -629,7 +571,12 @@ export default {
         let requestParams = {
           refresh: true,
           params: {
-            include: 'orderItem.order.account,orderItem.shoe.translations,orderItem.order.locatable.city.translations',
+            include: [
+              'orderItem.order.account',
+              'orderItem.shoe.translations',
+              'orderItem.shoe.options',
+              'orderItem.order.locatable.city.translations'
+            ].join(','),
             filter: {
               shippingId: { where: 'null' },
               stageId: 1, accountId, locatableId
