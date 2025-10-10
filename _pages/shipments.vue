@@ -31,20 +31,13 @@
             class="col"
             @update:modelValue="getShipmentItems"
           />
+          <dynamic-field
+            v-model="formShipment.unitsPerPackage"
+            :field="dynamicFields.unitsPerPackage"
+            class="col"
+          />
         </div>
         <div v-if="shipmentItems.length">
-          <div class="row q-gutter-md">
-            <dynamic-field
-              v-model="formShipment.unitsPerPackage"
-              :field="dynamicFields.unitsPerPackage"
-              class="col"
-            />
-            <dynamic-field
-              v-model="formShipment.shippedAt"
-              :field="dynamicFields.date"
-              class="col"
-            />
-          </div>
           <dynamic-field
             v-model="formShipment.comments"
             :field="dynamicFields.comment"
@@ -172,7 +165,7 @@
             <!-- Actions -->
             <div class="text-right q-mt-md">
               <q-btn unelevated rounded color="green" label="Crear Despacho"
-                     :disable="!formShipment.shippedAt || !formShipment.unitsPerPackage"
+                     :disable="!formShipment.accountId  || !formShipment.locatableId || !formShipment.unitsPerPackage"
                      no-caps @click="createShipment" />
             </div>
           </div>
@@ -191,48 +184,76 @@
 
     <!-- Shipments  -->
     <template v-for="(shipment, index) in shipmentsMapped" :key="shipment.id">
-      <q-expansion-item class="box box-auto-height q-mb-md">
+      <q-expansion-item
+        switch-toggle-side
+        class="box box-auto-height q-mb-md"
+        expand-icon-class="q-pr-none text-blue-grey"
+      >
         <template v-slot:header>
-          <q-item-section avatar>
-            <q-icon color="blue-grey" name="fa-light fa-truck-fast" />
-          </q-item-section>
-
-          <q-item-section class="text-blue-grey">
-            <div class="row items-center">
-              <div class="col">
-                <span>
-                  <b>{{ shipment.locatable.city.title }}</b> |
-                  {{ shipment.locatable.title }}
-                </span>
-                <div class="text-caption text-grey">
-                  {{ shipment.locatable.address }}
-                </div>
+          <div class="row q-col-gutter-sm items-center full-width">
+            <div class="col text-lowercase">
+              <div>
+                <q-icon
+                  color="blue-grey"
+                  class="q-mr-sm"
+                  size="sm"
+                  name="fa-light fa-map-location-dot"
+                />
+                <b>{{ shipment.locatable.city.title }}</b> | {{ shipment.locatable.title }}
               </div>
-              <div class="col">
-                <span><b>{{ shipment.id }}</b> | {{ shipment.account.title }}</span>
-                <div class="text-caption text-grey">
-                  {{ shipment.caption }}
-                </div>
+              <div class="text-caption text-grey">
+                {{ shipment.locatable.address }}
               </div>
             </div>
-          </q-item-section>
-
-          <q-item-section side @click.stop class="text-center text-blue-grey">
-            <q-btn
-              unelevated rounded no-caps
-              color="info"
-              @click.stop="openShipmentPackages(shipment)"
-            >
+            <div class="col text-center">
+              <q-icon color="info" size="sm" name="fa-light fa-user" />
+              <div class="text-bold">{{ shipment.account.title }}</div>
+            </div>
+            <div class="col text-right q-pr-md">
               <div>
-                <div class="row items-center justify-center">
-                  <q-icon name="fa-regular fa-box-taped" size="18px" class="q-mr-sm" />
-                  <b>Embalaje</b>
-                </div>
-                <div>{{ shipment.packagesLabel }}</div>
+                <q-icon
+                  name="fa-regular fa-box-taped"
+                  size="sm"
+                  class="q-mr-sm"
+                  color="blue-grey"
+                />
+                {{ $trn(shipment.totalItems) }} Pares
               </div>
-              <q-tooltip>Ver Rotulos de envio</q-tooltip>
+              <div class="text-caption text-grey">{{ shipment.packagesLabel }}</div>
+            </div>
+          </div>
+
+          <div class="row no-wrap items-center q-ml-sm">
+            <q-btn
+              color="blue-grey"
+              icon="fa-light fa-ellipsis-vertical"
+              rounded dense outline
+            >
+              <q-menu>
+                <q-list style="min-width: 100px" separator>
+                  <q-item clickable v-close-popup @click.native="openShipmentPackages(shipment)">
+                    <q-item-section avatar>
+                      <q-icon name="fa-light fa-box-open" size="20px" color="info" />
+                    </q-item-section>
+                    <q-item-section class="text-blue-grey">
+                      Ver Rotulos
+                    </q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click.native="validateMarkAsShipped(shipment)">
+                    <q-item-section avatar>
+                      <q-icon name="fa-light fa-box-check" size="20px" color="green" />
+                    </q-item-section>
+                    <q-item-section class="text-blue-grey">
+                      Marcar Como Enviado
+                    </q-item-section>
+                  </q-item>
+                  <q-item clickable v-close-popup @click="deleteShipment(shipment)">
+                    <q-item-section class="text-red-3 text-center">Eliminar</q-item-section>
+                  </q-item>
+                </q-list>
+              </q-menu>
             </q-btn>
-          </q-item-section>
+          </div>
         </template>
 
         <!--Content-->
@@ -342,18 +363,48 @@
       </q-expansion-item>
     </template>
 
+    <master-modal
+      v-model="confirmShipment.show"
+      title="Confirmar Despacho Enviado"
+      icon="fa-light fa-box-check">
+      <div class="relative-position">
+        <div v-html="confirmShipment.body" />
+        <dynamic-field
+          v-model="confirmShipment.shippedAt"
+          :field="dynamicFields.date"
+          class="q-my-md"
+        />
+        <div class="row justify-end q-gutter-sm">
+          <q-btn
+            rounded no-caps unelevated
+            label="Cancel"
+            color="grey"
+            @click="confirmShipment.show = false"
+          />
+          <q-btn
+            rounded no-caps unelevated
+            label="Completar"
+            :disabled="!confirmShipment.shippedAt"
+            color="green"
+            @click="markAsShipped"
+          />
+        </div>
+        <inner-loading :visible="confirmShipment.loading" />
+      </div>
+    </master-modal>
+
     <inner-loading :visible="loading" />
   </div>
 </template>
 <script>
 import { tdOrderId, tdDueDate, tdShoe } from 'modules/qfulfillment/_components/tdTable';
-import { usePDF } from 'vue3-pdfmake'
+import { usePDF } from 'vue3-pdfmake';
 import { generateShipmentPdf } from 'modules/qfulfillment/_plugins/shipment-boxes-pdf';
 
 export default {
-  setup(){
-    const pdfmake = usePDF({ autoInstallVFS: true })
-    return { pdfmake }
+  setup() {
+    const pdfmake = usePDF({ autoInstallVFS: true });
+    return { pdfmake };
   },
   props: {},
   components: { tdOrderId, tdDueDate, tdShoe },
@@ -378,8 +429,14 @@ export default {
         accountId: null,
         locatableId: null,
         unitsPerPackage: null,
-        shippedAt: null,
         comments: null
+      },
+      confirmShipment: {
+        show: false,
+        row: null,
+        body: null,
+        shippedAt: null,
+        loading: false
       }
     };
   },
@@ -516,7 +573,6 @@ export default {
         return {
           ...s,
           items,
-          caption: `${s.totalItems} Pares | ${this.$trd(s.shippedAt, { type: 'small' })}`,
           packagesLabel: `${s.packagesTotal} Paquetes x ${s.unitsPerPackage} Pares`,
           totals: this.calcSizeTotals(items)
         };
@@ -541,20 +597,18 @@ export default {
             include: [
               'items.orderItem.shoe.translations',
               'items.orderItem.shoe.options',
-              'items.orderItem.order.locatable.translations',
-              'items.orderItem.order.locatable.city.translations',
-              'items.orderItem.order.locatable.country.translations',
-              'items.orderItem.order.locatable.province.translations',
+              'items.orderItem.order',
+              'locatable.translations',
+              'locatable.city.translations',
+              'locatable.country.translations',
+              'locatable.province.translations',
               'account.contactItems.translations'
             ].join(',')
           }
         };
         //Request
         this.$crud.index('apiRoutes.qfulfillment.shipments', requestParams).then(response => {
-          this.shipments = response.data.map(i => ({
-            ...i,
-            locatable: i.items[0].orderItem.order.locatable
-          }));
+          this.shipments = response.data;
           this.loading = false;
         }).catch(error => {
           this.loading = false;
@@ -684,7 +738,7 @@ export default {
               this.loadingCreation = true;
               const requestParams = {
                 accountId: this.formShipment.accountId,
-                shippedAt: this.formShipment.shippedAt,
+                locatableId: this.formShipment.locatableId,
                 comments: this.formShipment.comments,
                 totalItems: this.newItems.totals.grand,
                 items: this.shipmentItems.map(i => i.id),
@@ -709,6 +763,76 @@ export default {
     },
     openShipmentPackages(row) {
       generateShipmentPdf(this.pdfmake, row);
+    },
+    validateMarkAsShipped(row) {
+      const body = `<div class="text-blue-grey">
+        <div><b>Cliente: </b>${row.account.title}</div>
+        <div><b>Direccion de Envio: </b>
+          ${row.locatable.address}
+          (${row.locatable.city.title})
+        </div>
+        <div><b>Cantidad: </b>${row.totalItems} Pares</div>
+        <div><b>Embalaje: </b>${row.packagesLabel}</div>
+        </div>
+        `;
+      this.confirmShipment = {
+        show: true, loading: false,
+        body, row, shippedAt: this.$moment().format('YYYY-MM-DD')
+      };
+    },
+    markAsShipped() {
+      this.confirmShipment.loading = true;
+      this.$crud.update(
+        'apiRoutes.qfulfillment.shipments', this.confirmShipment.row.id,
+        { shippedAt: this.confirmShipment.shippedAt, stageId: 1 }
+      ).then(response => {
+        this.$alert.info({ message: `${this.$tr('isite.cms.message.recordUpdated')}` });
+        this.getShipments();
+        this.confirmShipment.loading = false;
+        this.confirmShipment.show = false;
+      }).catch(err => {
+        this.$alert.error({ message: `${this.$tr('isite.cms.message.recordNoUpdated')}` });
+      }).finally(() => {
+        this.confirmShipment.loading = false;
+      });
+    },
+    deleteShipment(row) {
+      this.$alert.error({
+        mode: 'modal',
+        title: `Eliminar Despacho #${row.id}`,
+        message: `<div class="text-blue-grey">
+        <div><b>Cliente: </b>${row.account.title}</div>
+        <div><b>Direccion de Envio: </b>
+          ${row.locatable.address}
+          (${row.locatable.city.title})
+        </div>
+        <div><b>Cantidad: </b>${row.totalItems} Pares</div>
+
+        <b class="text-negative q-mt-sm">
+        ¿Estas seguro que quiere eliminar este despacho?
+        </b>
+        </div>
+        `,
+        actions: [
+          { label: 'Cancelar', color: 'grey' },
+          {
+            label: 'Eliminar',
+            color: 'negative',
+            handler: () => {
+              this.loading = true;
+              this.$crud.delete('apiRoutes.qfulfillment.shipments', row.id).then(response => {
+                this.$alert.info({ message: `${this.$tr('isite.cms.message.recordDeleted')}` });
+                this.getShipments();
+                this.loading = false;
+              }).catch(err => {
+                this.$alert.error({ message: `${this.$tr('isite.cms.message.recordNoDeleted')}` });
+              }).finally(() => {
+                this.loading = false;
+              });
+            }
+          }
+        ]
+      });
     }
   }
 };
