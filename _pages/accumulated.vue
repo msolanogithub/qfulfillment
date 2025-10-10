@@ -232,7 +232,7 @@ export default {
           label: 'Ciudad',
           field: 'order',
           align: 'left',
-          format: val => val.locatable.city.name
+          format: val => val.locatable.city.title
         }
       ];
 

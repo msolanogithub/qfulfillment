@@ -265,7 +265,7 @@ export default {
             select: {
               label: 'title',
               id: 'id',
-              sublabel: i => `(${i.city.name}) ${i.address}`
+              sublabel: i => `(${i.city.title}) ${i.address}`
             }
           }
         },

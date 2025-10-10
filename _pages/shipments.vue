@@ -201,7 +201,7 @@
             <div class="row items-center">
               <div class="col">
                 <span>
-                  <b>{{ shipment.locatable.city.name }}</b> |
+                  <b>{{ shipment.locatable.city.title }}</b> |
                   {{ shipment.locatable.title }}
                 </span>
                 <div class="text-caption text-grey">
@@ -375,8 +375,8 @@ export default {
         rowsPerPage: 0
       },
       formShipment: {
-        accountId: 6,
-        locatableId: 8,
+        accountId: null,
+        locatableId: null,
         unitsPerPackage: null,
         shippedAt: null,
         comments: null
@@ -643,7 +643,7 @@ export default {
         <div><b>Cliente: </b>${row.orderItem.order.account.title}</div>
         <div><b>Direccion de Envio: </b>
           ${row.orderItem.order.locatable.address}
-          (${row.orderItem.order.locatable.city.name})
+          (${row.orderItem.order.locatable.city.title})
         </div>
         <div><b>Cantidad: </b>${row.quantity}</div>
         <div><b>Referencia: </b> ${row.orderItem.shoe.title}</div>

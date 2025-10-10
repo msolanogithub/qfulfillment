@@ -334,7 +334,7 @@ export default {
           label: 'Ciudad',
           field: 'orderItem',
           align: 'left',
-          format: val => val.order.locatable.city.name
+          format: val => val.order.locatable.city.title
         },
         {
           name: 'supplier',

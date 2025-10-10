@@ -280,7 +280,7 @@ function madShipmentToPdf(shipment) {
     },
     recipient: {                    // Destinatario (DER)
       name: shipment.account.title,
-      address: `${shipment.locatable.address}. ${shipment.locatable.city.name}, ${shipment.locatable.province.name}. ${shipment.locatable.country.name}`,
+      address: `${shipment.locatable.address}. ${shipment.locatable.city.title}, ${shipment.locatable.province.title}. ${shipment.locatable.country.title}`,
       phone: shipment.account.contactItems
         .filter(i => [0, 1].includes(i.typeId))
         .map(i => i.value).join(' / ')
