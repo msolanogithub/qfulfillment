@@ -8,6 +8,7 @@ export default {
   orders: `${urlBase}/orders`,
   orderItems: `${urlBase}/order-items`,
   shipments: `${urlBase}/shipments`,
+  shipmentsGroupData: `${urlBase}/shipments/group/filter-data`,
   shipmentItems: `${urlBase}/shipment-items`,
   shipmentItemStages: `${urlBase}/shipment-item-stages`,
   shipmentItemsGroupData: `${urlBase}/shipment-items/group/filter-data`,

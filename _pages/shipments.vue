@@ -3,8 +3,54 @@
     <page-actions
       :title="$tr($route.meta.title)"
       class="q-mb-md" @refresh="getShipments" />
+
+    <div class="box box-auto-height q-mb-md">
+      <div class="box-title q-mb-md row justify-between items-center">
+        <div>
+          <q-icon name="fa-light fa-filter" class="q-mr-sm" />
+          Filtros
+        </div>
+        <q-toggle
+          v-model="showHistory"
+          label="Ver Enviados"
+          color="blue"
+          @update:modelValue="getShipments"
+        />
+      </div>
+      <div class="row q-col-gutter-md">
+        <div class="col">
+          <dynamic-field
+            v-model="filterData.accountId"
+            :field="dynamicFields.accountShipments"
+            @update:modelValue="getShipments"
+          />
+        </div>
+        <div class="col">
+          <dynamic-field
+            v-model="filterData.cityId"
+            :field="dynamicFields.cityShipments"
+            @update:modelValue="getShipments"
+          />
+        </div>
+        <div class="col" v-if="showHistory">
+          <dynamic-field
+            v-model="filterData.shippedAt"
+            :field="dynamicFields.date"
+            @update:modelValue="getShipments"
+          />
+        </div>
+      </div>
+      <div class="q-mb-md text-info">
+        <q-icon name="fa-light fa-circle-info" size="sm" class="q-mr-md" />
+        Aqui puedes administrar los despachos de tus clientes.
+        Puedes ver los pedidos pendientes de despacho con un color naranja y los despachos que ya fueron enviados con un
+        color verde.
+      </div>
+    </div>
+
     <!-- New shipment -->
     <q-expansion-item
+      v-if="!showHistory"
       class="box box-auto-height q-mb-md"
       icon="fa-light fa-truck-fast"
       label="Nuevo Despacho"
@@ -18,7 +64,7 @@
         <div class="row q-gutter-md">
           <dynamic-field
             v-model="formShipment.accountId"
-            :field="dynamicFields.accountId"
+            :field="dynamicFields.accountShipmentItems"
             class="col"
             @update:modelValue="val => {
             formShipment.locatableId = null;
@@ -31,17 +77,30 @@
             class="col"
             @update:modelValue="getShipmentItems"
           />
-          <dynamic-field
-            v-model="formShipment.unitsPerPackage"
-            :field="dynamicFields.unitsPerPackage"
-            class="col"
-          />
         </div>
         <div v-if="shipmentItems.length">
-          <dynamic-field
-            v-model="formShipment.comments"
-            :field="dynamicFields.comment"
-          />
+          <div class="row q-col-gutter-md">
+            <dynamic-field
+              v-model="formShipment.unitsPerPackage"
+              :field="dynamicFields.unitsPerPackage"
+              class="col"
+            />
+            <dynamic-field
+              v-model="formShipment.packagedBy"
+              :field="dynamicFields.packagedBy"
+              class="col"
+            />
+            <dynamic-field
+              v-model="formShipment.shippedWith"
+              :field="dynamicFields.shippedWith"
+              class="col"
+            />
+            <dynamic-field
+              v-model="formShipment.comments"
+              :field="dynamicFields.comment"
+              class="col-12"
+            />
+          </div>
           <!-- ShippemntItems -->
           <div>
             <div class="q-mb-md text-info q-mt-md">
@@ -94,36 +153,6 @@
                         </div>
                       </div>
                     </div>
-                    <q-popup-edit
-                      v-model="props.row.name"
-                      @before-show="row => {
-                  form.stageId = props.row.stageId;
-                  form.supplierId = props.row.supplierId
-                }">
-                      <div class="q-mb-md">
-                        <div class="text-blue-grey"><b>Orden:</b> {{ props.row.orderItem.id }}</div>
-                        <div class="text-blue-grey"><b>Cliente:</b> {{ props.row.orderItem.order.account.title }}</div>
-                        <div class="text-blue-grey"><b>Referencia:</b> {{ props.row.orderItem.shoe.title }}</div>
-                      </div>
-                      <dynamic-field v-model="form.supplierId" :field="dynamicFields.supplierId" />
-                      <dynamic-field v-model="form.stageId" :field="dynamicFields.stageId" />
-                      <!-- Actions -->
-                      <div class="q-mt-md row justify-end q-gutter-sm">
-                        <q-btn
-                          unelevated rounded no-caps
-                          label="Cancelar"
-                          color="grey"
-                          v-close-popup
-                        />
-                        <q-btn
-                          unelevated rounded no-caps
-                          label="Actualizar"
-                          color="green"
-                          v-close-popup
-                          @click="updateItem(props.row, props.rowIndex)"
-                        />
-                      </div>
-                    </q-popup-edit>
                   </div>
                   <!-- Totales -->
                   <div v-else-if="props.col.name == 'total'">
@@ -188,6 +217,8 @@
         switch-toggle-side
         class="box box-auto-height q-mb-md"
         expand-icon-class="q-pr-none text-blue-grey"
+        header-style="border-radius: 10px; padding: 15px"
+        :header-class="shipment.stageId == 1 ? 'bg-green-1' : 'bg-orange-1'"
       >
         <template v-slot:header>
           <div class="row q-col-gutter-sm items-center full-width">
@@ -223,7 +254,7 @@
             </div>
           </div>
 
-          <div class="row no-wrap items-center q-ml-sm">
+          <div class="row no-wrap items-center q-ml-sm" @click.stop>
             <q-btn
               color="blue-grey"
               icon="fa-light fa-ellipsis-vertical"
@@ -239,7 +270,11 @@
                       Ver Rotulos
                     </q-item-section>
                   </q-item>
-                  <q-item clickable v-close-popup @click.native="validateMarkAsShipped(shipment)">
+                  <q-item
+                    v-if="shipment.stageId == 0"
+                    clickable
+                    v-close-popup
+                    @click.native="validateMarkAsShipped(shipment)">
                     <q-item-section avatar>
                       <q-icon name="fa-light fa-box-check" size="20px" color="green" />
                     </q-item-section>
@@ -247,7 +282,11 @@
                       Marcar Como Enviado
                     </q-item-section>
                   </q-item>
-                  <q-item clickable v-close-popup @click="deleteShipment(shipment)">
+                  <q-item
+                    v-if="shipment.stageId == 0"
+                    clickable
+                    v-close-popup
+                    @click="deleteShipment(shipment)">
                     <q-item-section class="text-red-3 text-center">Eliminar</q-item-section>
                   </q-item>
                 </q-list>
@@ -257,9 +296,19 @@
         </template>
 
         <!--Content-->
-        <div v-if="shipment.comments" class="q-my-md text-info">
-          <q-icon name="fa-light fa-comment-dots" size="16px" class="q-mr-sm" />
-          {{ shipment.comments }}
+        <div class="q-pa-md">
+          <div class="q-mb-sm text-blue-grey">
+            <q-icon name="fa-light fa-person-dolly" size="18px" class="q-mr-sm" />
+            <b>Encargado de Despacho:</b> {{ shipment.options.packagedBy ?? '-' }}
+          </div>
+          <div class="q-mb-sm text-blue-grey">
+            <q-icon name="fa-light fa-truck-ramp-box" size="18px" class="q-mr-sm" />
+            <b>Despachado Con:</b> {{ shipment.options.shippedWith ?? '-' }}
+          </div>
+          <div class="text-blue-grey">
+            <q-icon name="fa-light fa-comment-dots" size="18px" class="q-mr-sm" />
+            <b>Comentarios:</b> {{ shipment.comments ?? '-' }}
+          </div>
         </div>
         <q-table
           flat bordered separator="cell"
@@ -290,7 +339,7 @@
                   {{ props.row.daysFromCreation }} Días Transcurridos
                 </div>
               </div>
-              <div v-else-if="props.col.name == 'supplier'" class="cursor-pointer">
+              <div v-else-if="props.col.name == 'supplier'">
                 <div class="row items-center no-wrap">
                   <div class="q-mr-sm">
                     <q-icon
@@ -306,36 +355,6 @@
                     </div>
                   </div>
                 </div>
-                <q-popup-edit
-                  v-model="props.row.name"
-                  @before-show="row => {
-                  form.stageId = props.row.stageId;
-                  form.supplierId = props.row.supplierId
-                }">
-                  <div class="q-mb-md">
-                    <div class="text-blue-grey"><b>Orden:</b> {{ props.row.orderItem.id }}</div>
-                    <div class="text-blue-grey"><b>Cliente:</b> {{ props.row.orderItem.order.account.title }}</div>
-                    <div class="text-blue-grey"><b>Referencia:</b> {{ props.row.orderItem.shoe.title }}</div>
-                  </div>
-                  <dynamic-field v-model="form.supplierId" :field="dynamicFields.supplierId" />
-                  <dynamic-field v-model="form.stageId" :field="dynamicFields.stageId" />
-                  <!-- Actions -->
-                  <div class="q-mt-md row justify-end q-gutter-sm">
-                    <q-btn
-                      unelevated rounded no-caps
-                      label="Cancelar"
-                      color="grey"
-                      v-close-popup
-                    />
-                    <q-btn
-                      unelevated rounded no-caps
-                      label="Actualizar"
-                      color="green"
-                      v-close-popup
-                      @click="updateItem(props.row, props.rowIndex)"
-                    />
-                  </div>
-                </q-popup-edit>
               </div>
               <div v-else>{{ props.value }}</div>
             </q-td>
@@ -370,6 +389,16 @@
       <div class="relative-position">
         <div v-html="confirmShipment.body" />
         <dynamic-field
+          v-model="confirmShipment.packagedBy"
+          :field="dynamicFields.packagedBy"
+          class="q-my-md"
+        />
+        <dynamic-field
+          v-model="confirmShipment.shippedWith"
+          :field="dynamicFields.shippedWith"
+          class="q-my-md"
+        />
+        <dynamic-field
           v-model="confirmShipment.shippedAt"
           :field="dynamicFields.date"
           class="q-my-md"
@@ -384,7 +413,7 @@
           <q-btn
             rounded no-caps unelevated
             label="Completar"
-            :disabled="!confirmShipment.shippedAt"
+            :disabled="!confirmShipment.shippedAt || !confirmShipment.packagedBy || !confirmShipment.shippedWith"
             color="green"
             @click="markAsShipped"
           />
@@ -392,6 +421,10 @@
         <inner-loading :visible="confirmShipment.loading" />
       </div>
     </master-modal>
+
+    <div v-if="!shipments.length" class="text-center text-grey-8 q-pa-md">
+      No hay despachos registrados...
+    </div>
 
     <inner-loading :visible="loading" />
   </div>
@@ -425,25 +458,65 @@ export default {
         page: 1,
         rowsPerPage: 0
       },
+      filterData: {
+        accountId: null,
+        cityId: null,
+        shippedAt: this.$moment().format('YYYY-MM-DD')
+      },
       formShipment: {
         accountId: null,
         locatableId: null,
         unitsPerPackage: null,
-        comments: null
+        comments: null,
+        shippedWith: null,
+        packagedBy: null
       },
       confirmShipment: {
         show: false,
         row: null,
         body: null,
         shippedAt: null,
+        packagedBy: null,
+        shippedWith: null,
         loading: false
-      }
+      },
+      showHistory: false
     };
   },
   computed: {
     dynamicFields() {
       return {
-        accountId: {
+        accountShipments: {
+          type: 'select',
+          props: {
+            label: 'Cliente',
+            clearable: true
+          },
+          loadOptions: {
+            apiRoute: 'apiRoutes.qfulfillment.shipmentsGroupData',
+            requestParams: { filter: { getUniqueAccounts: true } },
+            select: {
+              label: row => row.title,
+              id: row => row.id
+            }
+          }
+        },
+        cityShipments: {
+          type: 'select',
+          props: {
+            label: 'Ciudad',
+            clearable: true
+          },
+          loadOptions: {
+            apiRoute: 'apiRoutes.qfulfillment.shipmentsGroupData',
+            requestParams: { filter: { getUniqueCities: true } },
+            select: {
+              label: row => row.title,
+              id: row => row.id
+            }
+          }
+        },
+        accountShipmentItems: {
           type: 'select',
           props: {
             label: 'Cliente *'
@@ -480,6 +553,18 @@ export default {
             label: 'Unidades por paquete *',
             tye: 'numer',
             min: 1
+          }
+        },
+        shippedWith: {
+          type: 'input',
+          props: {
+            label: 'Despachado Con *'
+          }
+        },
+        packagedBy: {
+          type: 'input',
+          props: {
+            label: 'Encargado de Despacho *'
           }
         },
         date: {
@@ -593,7 +678,8 @@ export default {
         let requestParams = {
           refresh: true,
           params: {
-            order: { field: 'shipped_at', way: 'asc' },
+            order: { field: 'id', way: 'desc' },
+            filter: {},
             include: [
               'items.orderItem.shoe.translations',
               'items.orderItem.shoe.options',
@@ -606,6 +692,11 @@ export default {
             ].join(',')
           }
         };
+        //add filters
+        if (this.filterData.accountId) requestParams.params.filter.accountId = this.filterData.accountId;
+        if (this.filterData.cityId) requestParams.params.filter.cityId = this.filterData.cityId;
+        if (this.showHistory) requestParams.params.filter.shippedAt = this.filterData.shippedAt;
+        requestParams.params.filter.stageId = this.showHistory ? 1 : 0;
         //Request
         this.$crud.index('apiRoutes.qfulfillment.shipments', requestParams).then(response => {
           this.shipments = response.data;
@@ -743,7 +834,8 @@ export default {
                 totalItems: this.newItems.totals.grand,
                 items: this.shipmentItems.map(i => i.id),
                 unitsPerPackage: this.formShipment.unitsPerPackage,
-                packagesTotal
+                packagesTotal,
+                options: { shippedWith: this.formShipment.shippedWith, packagedBy: this.formShipment.packagedBy }
               };
               this.$crud.create('apiRoutes.qfulfillment.shipments', requestParams).then(response => {
                 this.$alert.info({ message: `${this.$tr('isite.cms.message.recordCreated')}` });
@@ -767,24 +859,33 @@ export default {
     validateMarkAsShipped(row) {
       const body = `<div class="text-blue-grey">
         <div><b>Cliente: </b>${row.account.title}</div>
+        <div><b>Cantidad: </b>${row.totalItems} Pares</div>
+        <div><b>Embalaje: </b>${row.packagesLabel}</div>
         <div><b>Direccion de Envio: </b>
           ${row.locatable.address}
           (${row.locatable.city.title})
         </div>
-        <div><b>Cantidad: </b>${row.totalItems} Pares</div>
-        <div><b>Embalaje: </b>${row.packagesLabel}</div>
         </div>
         `;
       this.confirmShipment = {
         show: true, loading: false,
-        body, row, shippedAt: this.$moment().format('YYYY-MM-DD')
+        body, row, shippedAt: this.$moment().format('YYYY-MM-DD'),
+        packagedBy: row.options.packagedBy,
+        shippedWith: row.options.shippedWith
       };
     },
     markAsShipped() {
       this.confirmShipment.loading = true;
       this.$crud.update(
         'apiRoutes.qfulfillment.shipments', this.confirmShipment.row.id,
-        { shippedAt: this.confirmShipment.shippedAt, stageId: 1 }
+        {
+          shippedAt: this.confirmShipment.shippedAt,
+          stageId: 1,
+          options: {
+            packagedBy: this.confirmShipment.packagedBy,
+            shippedWith: this.confirmShipment.shippedWith
+          }
+        }
       ).then(response => {
         this.$alert.info({ message: `${this.$tr('isite.cms.message.recordUpdated')}` });
         this.getShipments();
