@@ -241,7 +241,7 @@ export default {
             apiRoute: 'apiRoutes.qfulfillment.shipmentItemsGroupData',
             requestParams: { filter: { getUniqueShoes: true } },
             select: {
-              label: row => row.title,
+              label: row => `${row.reference} | ${row.title.toLowerCase()}`,
               sublabel: row => this.$trn(parseInt(row.quantity)) + ' Pares',
               id: row => row.id
             }

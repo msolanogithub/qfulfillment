@@ -19,14 +19,21 @@
           <dynamic-field
             v-model="filter.shoeId"
             :field="dynamicFields.byShoe"
-            @update:modelValue="filter.accountId = null; getOrderItems()"
+            @update:modelValue="getOrderItems()"
           />
         </div>
         <div class="col">
           <dynamic-field
             v-model="filter.accountId"
             :field="dynamicFields.byAccount"
-            @update:modelValue="filter.shoeId = null; getOrderItems()"
+            @update:modelValue="getOrderItems()"
+          />
+        </div>
+        <div class="col">
+          <dynamic-field
+            v-model="filter.cityId"
+            :field="dynamicFields.cityId"
+            @update:modelValue="getOrderItems()"
           />
         </div>
       </div>
@@ -130,6 +137,10 @@
       </q-table>
     </div>
 
+    <div v-else class="text-center text-grey-8 q-pa-md">
+      No hay Acumulado registrados...
+    </div>
+
     <master-modal
       v-model="confirmProgram.show"
       title="Confirmar Programación"
@@ -187,7 +198,8 @@ export default {
       },
       filter: {
         shoeId: null,
-        accountId: null
+        accountId: null,
+        cityId: null,
       },
       confirmProgram: {
         show: false,
@@ -289,7 +301,7 @@ export default {
             apiRoute: 'apiRoutes.qfulfillment.orderItems',
             requestParams: { filter: { getUniqueShoes: true }, include: 'shoe.translations' },
             select: {
-              label: row => row.shoe.title,
+              label: row => `${row.shoe.reference} | ${row.shoe.title.toLowerCase()}`,
               sublabel: row => this.$trn(parseInt(row.shoesQuantity)) + ' Pares',
               id: row => row.shoe.id
             }
@@ -318,6 +330,18 @@ export default {
           },
           loadOptions: {
             apiRoute: 'apiRoutes.qfulfillment.supplierTypes'
+          }
+        },
+        cityId: {
+          type: 'select',
+          props: {
+            label: 'Ciudad',
+            clearable: true
+          },
+          loadOptions: {
+            apiRoute: 'apiRoutes.qfulfillment.orderGroupData',
+            requestParams: { filter: { getUniqueCities: true } },
+            select: { label: 'title', id: 'id' }
           }
         }
       };
@@ -348,6 +372,7 @@ export default {
         //Filters
         if (this.filter.shoeId) requestParams.params.filter.shoeId = this.filter.shoeId;
         if (this.filter.accountId) requestParams.params.filter.accountId = this.filter.accountId;
+        if (this.filter.cityId) requestParams.params.filter.cityId = this.filter.cityId;
         //Request
         this.$crud.index('apiRoutes.qfulfillment.orderItems', requestParams).then(response => {
           this.orderItems = response.data.map(i => this.mapOrderItem(i));

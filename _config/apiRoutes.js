@@ -6,6 +6,7 @@ export default {
   urlBase: urlBase,
   version: moduleVersion,
   orders: `${urlBase}/orders`,
+  orderGroupData: `${urlBase}/orders/group/filter-data`,
   orderItems: `${urlBase}/order-items`,
   shipments: `${urlBase}/shipments`,
   shipmentsGroupData: `${urlBase}/shipments/group/filter-data`,

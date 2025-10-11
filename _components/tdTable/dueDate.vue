@@ -16,7 +16,7 @@ const colorDaysOff = dueDateDiff < 3 ? 'red' : dueDateDiff < 7 ? 'orange' : 'gre
         class="q-mr-sm" size="xs"
       />
       <div>
-        {{ order.dueDate }}
+        {{ $trd(order.dueDate, { type: 'small' }) }}
         <div class="text-caption text-grey">
           {{ dueDateDiff }} Días restantes
         </div>

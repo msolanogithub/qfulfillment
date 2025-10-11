@@ -43,13 +43,22 @@ export default {
               name: 'quantity',
               label: this.$tr('isite.cms.form.quantity'),
               field: 'quantity',
-              align: 'left'
+              align: 'left',
+              format: val => this.$trn(val)
+            },
+            {
+              name: 'city',
+              label: this.$tr('isite.cms.form.city'),
+              field: 'locatable',
+              align: 'left',
+              format: val => val.city.title
             },
             {
               name: 'dueDate',
               label: this.$tr('ifulfillment.cms.dueDate'),
               field: 'dueDate',
-              align: 'left'
+              align: 'left',
+              format: val => this.$trd(val, {type: 'small'})
             },
             {
               name: 'comment',
@@ -71,7 +80,7 @@ export default {
             }
           ],
           requestParams: {
-            include: 'account'
+            include: 'account,locatable.city.translations'
           },
           filters: {
             accountId: {
@@ -87,6 +96,18 @@ export default {
                   id: 'id',
                   sublabel: i => `${i.documentType.title}: ${i.document}`
                 }
+              }
+            },
+            cityId: {
+              type: 'select',
+              props: {
+                label: 'Ciudad',
+                clearable: true
+              },
+              loadOptions: {
+                apiRoute: 'apiRoutes.qfulfillment.orderGroupData',
+                requestParams: { filter: { getUniqueCities: true } },
+                select: { label: 'title', id: 'id' }
               }
             }
           }
