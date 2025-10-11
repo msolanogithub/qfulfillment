@@ -5,7 +5,7 @@ defineProps({ order: Object });
 </script>
 <template>
   <q-td style="padding: 8px !important;">
-    <div class="row" style="min-width: 170px">
+    <div class="row" style="min-width: 180px">
       <div class="col text-center">
         <div class="text-caption text-grey">Compra</div>
         {{ order.externalId }}

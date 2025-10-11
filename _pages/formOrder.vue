@@ -31,26 +31,6 @@
       </div>
       <div class="col-12">
         <div class="box">
-          <div class="box-title q-mb-md row justify-between items-center">
-            <div>
-              <q-icon name="fa-light fa-boot" class="q-mr-sm" />
-              Referencias
-            </div>
-            <div>
-              <q-chip size="12px" class="text-blue-grey bg-grey-2">
-                <q-avatar color="info" text-color="white">
-                  {{ totals.totalPairs }}
-                </q-avatar>
-                Pares Totales
-              </q-chip>
-              <q-chip size="12px" class="text-blue-grey bg-grey-2">
-                <q-avatar color="info" text-color="white">
-                  {{ totals.totalReferences }}
-                </q-avatar>
-                Referencias
-              </q-chip>
-            </div>
-          </div>
           <q-table
             flat bordered separator="cell"
             :rows="form.rows"
@@ -113,6 +93,25 @@
                   </q-popup-edit>
                 </div>
               </q-td>
+            </template>
+
+            <template v-slot:bottom-row>
+              <q-tr class="bg-grey-1 text-bold">
+                <!-- Celdas fijas de la izquierda: ajusta el colspan según tus columnas fijas -->
+                <q-td :colspan="1" class="text-blue-grey text-right">Totales</q-td>
+                <!-- Totales por talla -->
+                <q-td
+                  v-for="size in sizeRange"
+                  :key="`tot-${size}`"
+                  :class="sizeTotals.bySize[size] ? 'text-blue' : 'text-blue-grey'"
+                >
+                  {{ $trn(sizeTotals.bySize[size]) }}
+                </q-td>
+                <!-- Total general -->
+                <q-td class="text-center text-blue text-bold">
+                  {{ $trn(sizeTotals.grand) }}
+                </q-td>
+              </q-tr>
             </template>
           </q-table>
           <!-- Save Action -->
@@ -339,6 +338,11 @@ export default {
         }
       };
     },
+    sizeRange() {
+      const arr = [];
+      for (let i = this.sizes.min; i <= this.sizes.max; i++) arr.push(i);
+      return arr;
+    },
     columns() {
       let columns = [
         {
@@ -392,6 +396,20 @@ export default {
       );
 
       return { items, allValid };
+    },
+    sizeTotals() {
+      const totals = {};
+      this.sizeRange.forEach(size => (totals[size] = 0));
+      let grand = 0;
+      this.form.rows.forEach(row => {
+        this.sizeRange.forEach(size => {
+          const v = Number(row[size] || 0);
+          totals[size] += v;
+          grand += v;
+        });
+      });
+
+      return { bySize: totals, grand };
     }
   },
   methods: {

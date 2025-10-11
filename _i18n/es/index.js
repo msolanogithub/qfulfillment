@@ -3,7 +3,7 @@ export default {
     cms: {
       sidebar: {
         adminFulfillment: 'Producción',
-        adminOrders: 'Ordenes de compra',
+        adminOrders: 'Ordenes de Pedido',
         adminNewOrder: 'Nueva Orden de Compra',
         adminUpdateOrder: 'Actualizar Orden de Compra',
         adminAccumulated: 'Acumulado',
