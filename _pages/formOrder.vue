@@ -63,8 +63,22 @@
                 <div v-else-if="props.col.name === 'total'" class="text-right">
                   {{ rowTotal(props.row) }}
                 </div>
+                <!-- actions -->
+                <div v-else-if="props.col.name === 'actions'" class="text-right">
+                  <q-btn
+                    unelevated rounded no-caps
+                    color="red-5"
+                    @click="form.rows.splice(props.rowIndex, 1)"
+                  >
+                    <q-icon name="fa-light fa-trash-xmark" size="16px" class="q-mr-sm" />
+                    Remover
+                  </q-btn>
+                </div>
                 <!-- quantities -->
-                <div v-else class="cursor-pointer">
+                <div
+                  v-else-if="sizeRange.includes(props.col.name)"
+                  class="cursor-pointer"
+                >
                   <div :class="props.row[props.col.name] ? 'text-blue text-bold' : 'text-blue-grey'">
                     {{ props.row[props.col.name] }}
                   </div>
@@ -358,6 +372,7 @@ export default {
       }
 
       columns.push({ name: 'total', label: 'Total', field: 'total', align: 'right' });
+      if (!this.orderId) columns.push({ name: 'actions', label: 'Acciones', align: 'center' });
       return columns;
     },
     totals() {
