@@ -326,7 +326,11 @@ export default {
             requestParams: {
               include: 'translations,options.translations'
             },
-            select: { label: 'title', id: 'id' }
+            select: {
+              label: 'reference',
+              id: 'id',
+              sublabel: 'title'
+            }
           }
         },
         shoeOptions: {

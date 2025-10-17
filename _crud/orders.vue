@@ -85,6 +85,7 @@ export default {
           filters: {
             accountId: {
               type: 'select',
+              quickFilter: true,
               props: {
                 label: 'Cliente',
                 clearable: true
@@ -100,6 +101,7 @@ export default {
             },
             cityId: {
               type: 'select',
+              quickFilter: true,
               props: {
                 label: 'Ciudad',
                 clearable: true
